@@ -72,6 +72,14 @@ main {
 
 .hero { display: block; flex-shrink: 0; }
 
+.shot {
+  display: block;
+  width: 100%;
+  margin: 1.2rem 0 0;
+  border-radius: 4px;
+  border: 1px solid #000;
+}
+
 h1, h2 { color: var(--orange); margin: 0 0 0.4rem; }
 
 h1 { font-size: 2rem; }
