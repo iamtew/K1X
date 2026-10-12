@@ -2,6 +2,7 @@
 #include "PluginEditor.h"
 
 #include <cstring>
+#include <vector>
 
 namespace
 {
@@ -38,11 +39,14 @@ K1XAudioProcessor::K1XAudioProcessor()
     apvts.state.setProperty (kPatchName, kInitPatch, nullptr);
 }
 
-void K1XAudioProcessor::prepareToPlay (double sampleRate, int)
+void K1XAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     voice.prepare (sampleRate);
     analyser.prepare (sampleRate);
     meter.prepare (sampleRate);
+    const int ch = juce::jmax (2, getTotalNumOutputChannels());
+    postFx.prepare (sampleRate, samplesPerBlock, ch);
+    postEq.prepare (sampleRate, samplesPerBlock, ch);
 }
 
 bool K1XAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
@@ -132,8 +136,46 @@ void K1XAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mi
     for (int ch = 1; ch < buffer.getNumChannels(); ++ch)
         buffer.copyFrom (ch, 0, buffer, 0, 0, n);
 
+    postFx.process (buffer, hostBpm(), apvts);
+    k1x::EqBandParam bands[k1x::eqBandCount];
+    k1x::readEqBands (apvts, bands);
+    postEq.process (buffer, k1x::postEqEnabled (apvts), bands);
+
     analyser.push (buffer);
     meter.push (buffer);
+}
+
+void K1XAudioProcessor::renderWithPost (juce::AudioBuffer<float>& dest, double sampleRate)
+{
+    const int n = dest.getNumSamples();
+    const int chs = dest.getNumChannels();
+    dest.clear();
+    if (n <= 0 || chs <= 0)
+        return;
+
+    std::vector<float> dry ((size_t) n);
+    renderShot (dry.data(), n, sampleRate);
+    for (int i = 0; i < n; ++i)
+        dest.setSample (0, i, dry[(size_t) i]);
+    for (int ch = 1; ch < chs; ++ch)
+        dest.copyFrom (ch, 0, dest, 0, 0, n);
+
+    k1x::PostFx fx;
+    k1x::ParametricEq eq;
+    const int block = 512;
+    fx.prepare (sampleRate, block, chs);
+    eq.prepare (sampleRate, block, chs);
+    const float bpm = hostBpm();
+    for (int pos = 0; pos < n; )
+    {
+        const int nThis = juce::jmin (block, n - pos);
+        juce::AudioBuffer<float> view (dest.getArrayOfWritePointers(), chs, pos, nThis);
+        fx.process (view, bpm, apvts);
+        k1x::EqBandParam bands[k1x::eqBandCount];
+        k1x::readEqBands (apvts, bands);
+        eq.process (view, k1x::postEqEnabled (apvts), bands);
+        pos += nThis;
+    }
 }
 
 juce::File K1XAudioProcessor::patchesDir() const

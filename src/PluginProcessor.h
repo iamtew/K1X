@@ -3,6 +3,8 @@
 #include "dsp/KickRender.h"
 #include "dsp/KickVoice.h"
 #include "dsp/OutputScope.h"
+#include "dsp/ParametricEq.h"
+#include "dsp/PostFx.h"
 #include "parameters/ParameterLayout.h"
 
 #include <JuceHeader.h>
@@ -43,6 +45,7 @@ public:
     float hostBpm() const;
     k1x::KickVoice::Params currentParams() const;
     void renderShot (float* dest, int n, double sampleRate) const;
+    void renderWithPost (juce::AudioBuffer<float>& dest, double sampleRate);
     k1x::EqAnalyser& eqAnalyser() { return analyser; }
     k1x::OutputMeter& outputMeter() { return meter; }
 
@@ -61,6 +64,8 @@ private:
     int lengthChoice() const;
 
     k1x::KickVoice voice;
+    k1x::PostFx postFx;
+    k1x::ParametricEq postEq;
     k1x::EqAnalyser analyser;
     k1x::OutputMeter meter;
     std::atomic<bool> pendingTrig { false };

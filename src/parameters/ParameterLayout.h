@@ -76,5 +76,52 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout
                                                          "Style",
                                                          StringArray { "909", "808", "707", "Tight", "Hard" },
                                                          0));
+
+    auto addOn = [&] (const char* id, const char* name, bool def = false)
+    {
+        layout.add (std::make_unique<AudioParameterBool> (ParameterID { id, 1 }, name, def));
+    };
+    auto addUnit = [&] (const char* id, const char* name, float def)
+    {
+        layout.add (std::make_unique<AudioParameterFloat> (
+            ParameterID { id, 1 }, name, unit, def, pct (unit)));
+    };
+
+    addUnit (ParamID::fxDry, "Dry", 1.f);
+    addUnit (ParamID::fxWet, "FX", 0.f);
+    addOn (ParamID::fxDstOn, "Dist On");
+    addUnit (ParamID::fxDstDrive, "Dist Drive", 0.4f);
+    addOn (ParamID::fxDlyOn, "Delay On");
+    addUnit (ParamID::fxDlyTime, "Delay Time", 0.35f);
+    addUnit (ParamID::fxDlyFb, "Delay Fb", 0.35f);
+    addUnit (ParamID::fxDlyCut, "Delay Cut", 0.7f);
+    addOn (ParamID::fxDlySync, "Delay Sync", true);
+    layout.add (std::make_unique<AudioParameterChoice> (
+        ParameterID { ParamID::fxDlyDiv, 1 }, "Delay Div",
+        StringArray { "1/16", "1/8", "1/4", "1/2" }, 1));
+    addOn (ParamID::fxRevOn, "Reverb On");
+    addUnit (ParamID::fxRevSize, "Reverb Size", 0.45f);
+    addUnit (ParamID::fxRevDamp, "Reverb Damp", 0.4f);
+    addUnit (ParamID::fxRevWidth, "Reverb Width", 0.8f);
+
+    const float eqHzDef[ParamID::eqBandCount] = { 80.f, 250.f, 1000.f, 4000.f, 10000.f };
+    auto eqHz = NormalisableRange<float> (20.f, 20000.f, 0.01f, 0.3f);
+    auto eqQ = NormalisableRange<float> (0.1f, 10.f, 0.01f, 0.4f);
+    auto eqGain = NormalisableRange<float> (-12.f, 12.f);
+    auto eqTypes = StringArray { "Off", "Peak", "Low S", "High S", "HP", "LP" };
+    addOn (ParamID::postEqOn, "Post EQ On");
+    for (int b = 0; b < ParamID::eqBandCount; ++b)
+    {
+        const String n = "Post EQ " + String (b + 1);
+        layout.add (std::make_unique<AudioParameterChoice> (
+            ParameterID { ParamID::postEqType[b], 1 }, n + " Type", eqTypes, 1));
+        layout.add (std::make_unique<AudioParameterFloat> (
+            ParameterID { ParamID::postEqFreq[b], 1 }, n + " Freq", eqHz, eqHzDef[b]));
+        layout.add (std::make_unique<AudioParameterFloat> (
+            ParameterID { ParamID::postEqGain[b], 1 }, n + " Gain", eqGain, 0.f));
+        layout.add (std::make_unique<AudioParameterFloat> (
+            ParameterID { ParamID::postEqQ[b], 1 }, n + " Q", eqQ, 0.7f));
+    }
+
     return layout;
 }

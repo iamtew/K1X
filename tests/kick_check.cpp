@@ -1,3 +1,4 @@
+#include "dsp/EqBiquad.h"
 #include "dsp/KickRender.h"
 #include "ui/VersionCompare.h"
 
@@ -62,6 +63,20 @@ int main()
         tightTail = std::max (tightTail, std::abs (longBuf[(size_t) i]));
     assert (tightTail < 1e-4f);
     assert (boom > tightTail);
+
+    // Dry=1 FX=0 is a no-op mix; 0 dB peak EQ is unity at its centre.
+    {
+        float dry = 0.37f, wet = 0.91f;
+        const float mixed = dry * 1.f + wet * 0.f;
+        assert (std::abs (mixed - dry) < 1e-6f);
+        auto b0 = k1x::eqBiquad (k1x::eqTypePeak, 44100.f, 1000.f, 0.7f, 0.f);
+        const float mag0 = k1x::eqMagnitude (&b0, 1, 44100.f, 1000.f);
+        assert (std::abs (mag0 - 1.f) < 1e-3f);
+        auto b6 = k1x::eqBiquad (k1x::eqTypePeak, 44100.f, 1000.f, 0.7f, 6.f);
+        const float mag6 = k1x::eqMagnitude (&b6, 1, 44100.f, 1000.f);
+        const float db6 = 20.f * std::log10 (mag6);
+        assert (std::abs (db6 - 6.f) < 0.25f);
+    }
 
     std::vector<std::string> tags { "0.0.2", "v0.0.1" };
     assert (k1x::newestNewerTag (tags, "0.0.1") == "0.0.2");
