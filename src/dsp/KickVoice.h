@@ -23,7 +23,7 @@ struct KickVoice
         float toneHz     = 3500.f;
         float lo         = 0.55f;  // 0.5 = flat, 0/1 = ±12 dB
         float hi         = 0.45f;
-        float level      = 0.75f;
+        float level      = 0.75f;  // applied after the voice (live master)
         float lengthSec  = 0.f;    // 0 = free (follow decay)
     };
 
@@ -40,7 +40,7 @@ struct KickVoice
         phase = 0.0;
         noise = 0xAce1u;
         active_ = true;
-        resetFilters();
+        // Keep filter state on retrigger — zeroing it pops.
 
         const float attMs = 0.3f + params.punch * 11.7f;
         attackN = (int) (sr * (double) attMs * 0.001);
@@ -57,7 +57,8 @@ struct KickVoice
         if (totalN < attackN + 32)
             totalN = attackN + 32;
 
-        fadeN = (int) (sr * 0.005); // 5ms end fade so the gate is not a click
+        // ~25 ms cosine fade: 5 ms is a quarter-cycle at 50 Hz and clicks.
+        fadeN = (int) (sr * 0.025);
         if (fadeN < 8)
             fadeN = 8;
         if (fadeN > totalN / 4)
@@ -85,12 +86,12 @@ struct KickVoice
         else
             amp = std::exp ((float) (-(t - (double) attackN / sr) / (double) params.decay));
 
-        // Click: ~4ms noise burst. HP-ish by subtracting a cheap one-pole.
+        // Click: ~4 ms noise burst, same attack as the body so sample 0 is not a pop.
         const float clickEnv = std::exp ((float) (-t / 0.004));
         noise = noise * 1664525u + 1013904223u;
         const float n = ((float) (int) (noise >> 8) * (1.f / 8388608.f)) - 1.f;
         clickLp += 0.35f * (n - clickLp);
-        const float clickSig = (n - clickLp) * clickEnv * params.click;
+        const float clickSig = (n - clickLp) * clickEnv * params.click * amp;
 
         float x = body * amp + clickSig;
         // Drive gain sits around 1..5 so tanh actually saturates.
@@ -109,12 +110,11 @@ struct KickVoice
         hiZ += hpC * (loft - hiZ);
         float y = (loft - hiZ) * hiG + hiZ;
 
-        y *= params.level;
-
         if (pos >= totalN - fadeN)
         {
             const int left = totalN - pos;
-            y *= left <= 0 ? 0.f : (float) left / (float) fadeN;
+            const float u = left <= 0 ? 0.f : (float) left / (float) fadeN;
+            y *= 0.5f * (1.f - std::cos (3.141592653589793f * u));
         }
 
         ++pos;

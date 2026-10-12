@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<JUCERPROJECT name="K1X" companyName="Stupid Systems LLC" version="0.0.1"
-              userNotes="909-style kick drum." projectType="audioplug" pluginAUIsSandboxSafe="1"
-              pluginManufacturer="Stupid Systems LLC" pluginManufacturerCode="Ssys"
-              pluginCode="K1x1" cppLanguageStandard="17" pluginFormats="buildVST3,buildStandalone"
-              pluginCharacteristicsValue="pluginIsSynth,pluginWantsMidiIn"
+<JUCERPROJECT name="K1X" companyName="Stupid Systems LLC" version="0.0.1" userNotes="909-style kick drum."
+              projectType="audioplug" pluginAUIsSandboxSafe="1" pluginManufacturer="Stupid Systems LLC"
+              pluginManufacturerCode="Ssys" pluginCode="K1x1" cppLanguageStandard="17"
+              pluginFormats="buildVST3,buildStandalone" pluginCharacteristicsValue="pluginIsSynth,pluginWantsMidiIn"
               useAppConfig="0" addUsingNamespaceToJuceHeader="1" id="k1xPrj1"
               jucerFormatVersion="1">
   <MAINGROUP id="k1xMain" name="K1X">
@@ -20,6 +19,7 @@
       <GROUP id="dspGrp01" name="dsp">
         <FILE id="kckH001" name="KickVoice.h" compile="0" resource="0" file="src/dsp/KickVoice.h"/>
         <FILE id="rndH001" name="KickRender.h" compile="0" resource="0" file="src/dsp/KickRender.h"/>
+        <FILE id="scpH001" name="OutputScope.h" compile="0" resource="0" file="src/dsp/OutputScope.h"/>
       </GROUP>
       <GROUP id="prmGrp01" name="parameters">
         <FILE id="pidH001" name="ParameterIDs.h" compile="0" resource="0" file="src/parameters/ParameterIDs.h"/>
@@ -44,6 +44,7 @@
     <MODULE id="juce_audio_utils" showAllCode="1" useLocalCopy="0" useGlobalPath="0"/>
     <MODULE id="juce_core" showAllCode="1" useLocalCopy="0" useGlobalPath="0"/>
     <MODULE id="juce_data_structures" showAllCode="1" useLocalCopy="0" useGlobalPath="0"/>
+    <MODULE id="juce_dsp" showAllCode="1" useLocalCopy="0" useGlobalPath="0"/>
     <MODULE id="juce_events" showAllCode="1" useLocalCopy="0" useGlobalPath="0"/>
     <MODULE id="juce_graphics" showAllCode="1" useLocalCopy="0" useGlobalPath="0"/>
     <MODULE id="juce_gui_basics" showAllCode="1" useLocalCopy="0" useGlobalPath="0"/>
@@ -69,6 +70,7 @@
         <MODULEPATH id="juce_graphics" path="C:\Users\Mikael\JUCE\modules"/>
         <MODULEPATH id="juce_gui_basics" path="C:\Users\Mikael\JUCE\modules"/>
         <MODULEPATH id="juce_gui_extra" path="C:\Users\Mikael\JUCE\modules"/>
+        <MODULEPATH id="juce_dsp" path="C:\Users\Mikael\JUCE\modules"/>
       </MODULEPATHS>
     </VS2022>
   </EXPORTFORMATS>

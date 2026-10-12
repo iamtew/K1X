@@ -14,10 +14,11 @@
 - **HPF** — rumble cut.
 - **Tone** — low-pass.
 - **Lo / Hi** — shelves (±12 dB around centre).
-- **Level** — output.
 - **Length** — Free, or trim to 1/4, 1/8, 1/16 of host BPM (120 if the host has no tempo).
 
-**Init Patch** (top right) — click for Init / Save / Save As / Export / Import, or the saved list. Chevrons step through patches. Files live in `%AppData%\Stupid Systems LLC\K1X\Patches` as `.k1xp`.
+**Volume** (title bar, right) — live master fader and output spectrum. Turns orange for ~800 ms if the output hits 0 dBFS.
+
+**Init Patch** (title bar) — click for Init / Save / Save As / Export / Import, or the saved list. Chevrons step through patches. Files live in `%AppData%\Stupid Systems LLC\K1X\Patches` as `.k1xp`.
 
 Click **K1X** + version in the top left for About and a GitHub update check.
 

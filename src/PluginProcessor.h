@@ -2,6 +2,7 @@
 
 #include "dsp/KickRender.h"
 #include "dsp/KickVoice.h"
+#include "dsp/OutputScope.h"
 #include "parameters/ParameterLayout.h"
 
 #include <JuceHeader.h>
@@ -42,6 +43,8 @@ public:
     float hostBpm() const;
     k1x::KickVoice::Params currentParams() const;
     void renderShot (float* dest, int n, double sampleRate) const;
+    k1x::EqAnalyser& eqAnalyser() { return analyser; }
+    k1x::OutputMeter& outputMeter() { return meter; }
 
     juce::File patchesDir() const;
     juce::StringArray patchNames() const;
@@ -58,6 +61,8 @@ private:
     int lengthChoice() const;
 
     k1x::KickVoice voice;
+    k1x::EqAnalyser analyser;
+    k1x::OutputMeter meter;
     std::atomic<bool> pendingTrig { false };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (K1XAudioProcessor)

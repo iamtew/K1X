@@ -319,6 +319,108 @@ void K1XAudioProcessorEditor::PatchBar::mouseUp (const juce::MouseEvent& e)
         onOpen();
 }
 
+K1XAudioProcessorEditor::VolumeStrip::VolumeStrip (K1XAudioProcessorEditor& ed)
+    : editor (ed)
+{
+    slider.setLookAndFeel (&lnf);
+    slider.setSliderStyle (juce::Slider::LinearHorizontal);
+    slider.setTextBoxStyle (juce::Slider::NoTextBox, true, 0, 0);
+    slider.setOpaque (false);
+    slider.setColour (juce::Slider::backgroundColourId, juce::Colours::transparentBlack);
+    slider.setColour (juce::Slider::trackColourId, juce::Colours::transparentBlack);
+    slider.setColour (juce::Slider::thumbColourId, kMetal);
+    auto* p = dynamic_cast<juce::RangedAudioParameter*> (editor.proc.apvts.getParameter (ParamID::level));
+    if (p != nullptr)
+        slider.setDoubleClickReturnValue (true, p->convertFrom0to1 (p->getDefaultValue()));
+    sliderAtt = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (
+        editor.proc.apvts, ParamID::level, slider);
+    addAndMakeVisible (slider);
+}
+
+K1XAudioProcessorEditor::VolumeStrip::~VolumeStrip()
+{
+    slider.setLookAndFeel (nullptr);
+}
+
+juce::Rectangle<float> K1XAudioProcessorEditor::VolumeStrip::faderArea() const
+{
+    auto r = getLocalBounds().toFloat();
+    return r.removeFromLeft (r.getWidth() * 5.f / 9.f);
+}
+
+juce::Rectangle<float> K1XAudioProcessorEditor::VolumeStrip::scopeArea() const
+{
+    auto r = getLocalBounds().toFloat();
+    r.removeFromLeft (r.getWidth() * 5.f / 9.f + 4.f);
+    return r;
+}
+
+void K1XAudioProcessorEditor::VolumeStrip::resized()
+{
+    slider.setBounds (faderArea().toNearestInt());
+}
+
+void K1XAudioProcessorEditor::VolumeStrip::LnF::drawLinearSlider (juce::Graphics& g, int, int y, int, int h,
+                                                                 float pos, float, float,
+                                                                 juce::Slider::SliderStyle, juce::Slider&)
+{
+    const float by = (float) (y + h);
+    juce::Path p;
+    p.addTriangle (pos - 5.f, by, pos + 5.f, by, pos, by - 7.f);
+    g.setColour (kDark);
+    g.fillPath (p);
+    g.setColour (kMetal);
+    g.strokePath (p, juce::PathStrokeType (1.f));
+}
+
+void K1XAudioProcessorEditor::VolumeStrip::paint (juce::Graphics& g)
+{
+    auto fader = faderArea();
+    auto scope = scopeArea();
+
+    g.setColour (kDark);
+    g.fillRoundedRectangle (fader, 3.f);
+    g.fillRoundedRectangle (scope, 3.f);
+
+    const float pos = (float) slider.valueToProportionOfLength (slider.getValue());
+    auto fill = fader.withWidth (juce::jmax (2.f, fader.getWidth() * pos));
+    g.setColour (clipped ? kOrange : kChassis.brighter (0.15f));
+    g.fillRoundedRectangle (fill, 3.f);
+
+    g.setColour (kMetal.withAlpha (0.35f));
+    for (int i = 1; i < 8; ++i)
+    {
+        const float x = fader.getX() + fader.getWidth() * (float) i / 8.f;
+        const float tickH = (i == 4) ? 6.f : 3.f;
+        g.drawLine (x, fader.getBottom() - 2.f, x, fader.getBottom() - 2.f - tickH, 1.f);
+    }
+
+    const int n = juce::jlimit (2, 256, (int) scope.getWidth());
+    float specDb[256];
+    editor.proc.eqAnalyser().copyLogDb (specDb, n);
+    juce::Path spec;
+    spec.startNewSubPath (scope.getX(), scope.getBottom());
+    for (int i = 0; i < n; ++i)
+    {
+        const float x01 = (float) i / (float) (n - 1);
+        const float y01 = 1.f - juce::jlimit (0.f, 1.f, (specDb[i] + 72.f) / 72.f);
+        spec.lineTo (scope.getX() + x01 * scope.getWidth(),
+                     scope.getY() + y01 * scope.getHeight());
+    }
+    spec.lineTo (scope.getRight(), scope.getBottom());
+    spec.closeSubPath();
+    g.setColour ((clipped ? kOrange : kMetal).withAlpha (0.7f));
+    g.fillPath (spec);
+}
+
+void K1XAudioProcessorEditor::VolumeStrip::refresh()
+{
+    if (editor.proc.outputMeter().takeClip())
+        clipUntil = juce::Time::getMillisecondCounter() + 800;
+    clipped = juce::Time::getMillisecondCounter() < clipUntil;
+    repaint();
+}
+
 K1XAudioProcessorEditor::K1XAudioProcessorEditor (K1XAudioProcessor& p)
     : juce::AudioProcessorEditor (p), proc (p)
 {
@@ -338,7 +440,7 @@ K1XAudioProcessorEditor::K1XAudioProcessorEditor (K1XAudioProcessor& p)
         { ParamID::tune, "Tune" }, { ParamID::pitchDrop, "Drop" }, { ParamID::pitchDecay, "P.Decay" },
         { ParamID::click, "Click" }, { ParamID::punch, "Punch" }, { ParamID::decay, "Decay" },
         { ParamID::drive, "Drive" }, { ParamID::hpf, "HPF" }, { ParamID::tone, "Tone" },
-        { ParamID::lo, "Lo" }, { ParamID::hi, "Hi" }, { ParamID::level, "Level" }
+        { ParamID::lo, "Lo" }, { ParamID::hi, "Hi" }
     };
     for (auto& s : kKnobs)
     {
@@ -364,6 +466,7 @@ K1XAudioProcessorEditor::K1XAudioProcessorEditor (K1XAudioProcessor& p)
     patchBar.onOpen = [this] { openPatchMenu(); };
     addAndMakeVisible (patchBar);
     refreshPatchName();
+    addAndMakeVisible (volumeStrip);
 
     standalone = juce::PluginHostType::getPluginLoadedAs() == juce::AudioProcessor::wrapperType_Standalone;
     playBtn.setClickingTogglesState (false);
@@ -384,7 +487,7 @@ K1XAudioProcessorEditor::K1XAudioProcessorEditor (K1XAudioProcessor& p)
         proc.apvts.addParameterListener (id, this);
 
     setSize (kEditorW, kEditorH);
-    startTimerHz (8);
+    startTimerHz (15);
 }
 
 K1XAudioProcessorEditor::~K1XAudioProcessorEditor()
@@ -407,6 +510,7 @@ void K1XAudioProcessorEditor::timerCallback()
     if (waveDirty)
         rebuildWave();
     refreshPatchName();
+    volumeStrip.refresh();
 }
 
 void K1XAudioProcessorEditor::rebuildWave()
@@ -458,7 +562,8 @@ void K1XAudioProcessorEditor::resized()
     auto r = getLocalBounds().reduced (kPad);
     auto title = r.removeFromTop (kTitleH);
     title.removeFromLeft (kTitleHitW);
-    patchBar.setBounds (title.removeFromRight (juce::jmin (220, title.getWidth())).reduced (4, 4));
+    volumeStrip.setBounds (title.removeFromRight (240).reduced (2, 4));
+    patchBar.setBounds (title.reduced (4, 4));
     wave.setBounds (r.removeFromTop (110).reduced (0, 4));
 
     auto tools = r.removeFromTop (28);

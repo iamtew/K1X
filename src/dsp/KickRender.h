@@ -12,7 +12,7 @@ inline void renderKick (float* dest, int n, double sampleRate, const KickVoice::
     v.prepare (sampleRate);
     v.trigger (p);
     for (int i = 0; i < n; ++i)
-        dest[i] = v.process();
+        dest[i] = v.process() * p.level;
 }
 
 inline float lengthSeconds (int lengthChoice, float bpm)

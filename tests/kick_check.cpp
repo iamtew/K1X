@@ -30,6 +30,13 @@ int main()
         tail = std::max (tail, std::abs (buf[(size_t) i]));
     assert (tail < 1e-4f);
 
+    const int gateFrom = (int) (0.015f * 44100.f);
+    const int gateTo = (int) (0.125f * 44100.f);
+    float maxDelta = 0.f;
+    for (int i = gateFrom + 1; i < gateTo && i < (int) buf.size(); ++i)
+        maxDelta = std::max (maxDelta, std::abs (buf[(size_t) i] - buf[(size_t) i - 1]));
+    assert (maxDelta < 0.05f);
+
     const float q = k1x::lengthSeconds (1, 120.f);
     assert (std::abs (q - 0.5f) < 1e-4f);
     assert (k1x::lengthSeconds (0, 120.f) == 0.f);

@@ -67,7 +67,7 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout
     layout.add (std::make_unique<AudioParameterFloat> (ParameterID { ParamID::hi, 1 },
                                                         "Hi", unit, 0.45f, pct (unit)));
     layout.add (std::make_unique<AudioParameterFloat> (ParameterID { ParamID::level, 1 },
-                                                        "Level", unit, 0.75f, pct (unit)));
+                                                        "Volume", unit, 0.75f, pct (unit)));
     layout.add (std::make_unique<AudioParameterChoice> (ParameterID { ParamID::length, 1 },
                                                          "Length",
                                                          StringArray { "Free", "1/4", "1/8", "1/16" },

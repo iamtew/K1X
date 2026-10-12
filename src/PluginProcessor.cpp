@@ -41,6 +41,8 @@ K1XAudioProcessor::K1XAudioProcessor()
 void K1XAudioProcessor::prepareToPlay (double sampleRate, int)
 {
     voice.prepare (sampleRate);
+    analyser.prepare (sampleRate);
+    meter.prepare (sampleRate);
 }
 
 bool K1XAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
@@ -113,11 +115,15 @@ void K1XAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mi
 
     auto* l = buffer.getWritePointer (0);
     const int n = buffer.getNumSamples();
+    const float g = raw (ParamID::level);
     for (int i = 0; i < n; ++i)
-        l[i] = voice.process();
+        l[i] = voice.process() * g;
 
     for (int ch = 1; ch < buffer.getNumChannels(); ++ch)
         buffer.copyFrom (ch, 0, buffer, 0, 0, n);
+
+    analyser.push (buffer);
+    meter.push (buffer);
 }
 
 juce::File K1XAudioProcessor::patchesDir() const

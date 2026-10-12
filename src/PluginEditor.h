@@ -81,6 +81,30 @@ private:
         std::function<void()> onOpen;
     };
 
+    struct VolumeStrip : public juce::Component
+    {
+        explicit VolumeStrip (K1XAudioProcessorEditor& ed);
+        ~VolumeStrip() override;
+        void resized() override;
+        void paint (juce::Graphics& g) override;
+        void refresh();
+        juce::Rectangle<float> faderArea() const;
+        juce::Rectangle<float> scopeArea() const;
+
+        struct LnF : public juce::LookAndFeel_V4
+        {
+            void drawLinearSlider (juce::Graphics&, int, int, int, int, float pos,
+                                   float, float, juce::Slider::SliderStyle, juce::Slider&) override;
+        };
+
+        K1XAudioProcessorEditor& editor;
+        LnF lnf;
+        juce::Slider slider;
+        std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> sliderAtt;
+        bool clipped = false;
+        juce::uint32 clipUntil = 0;
+    };
+
     struct Knob : public juce::Component
     {
         Knob (juce::AudioProcessorValueTreeState& st, const juce::String& id, const juce::String& name);
@@ -98,6 +122,7 @@ private:
     juce::ComboBox lengthBox;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> lengthAtt;
     PatchBar patchBar;
+    VolumeStrip volumeStrip { *this };
     juce::ToggleButton playBtn { "Play" };
     juce::ToggleButton exportBtn { "Export WAV" };
     AboutBox aboutBox;
