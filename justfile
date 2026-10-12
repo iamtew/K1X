@@ -1,0 +1,53 @@
+# K1X – Justfile (Projucer + MSBuild)
+
+set windows-shell := ["powershell.exe", "-NoLogo", "-Command"]
+
+JUCE_PATH := env_var_or_default("JUCE_PATH", env_var("USERPROFILE") + "\\JUCE")
+PROJUCER  := JUCE_PATH + "\\Projucer.exe"
+PROJECT   := "K1X.jucer"
+SOLUTION  := "Builds\\VisualStudio2022\\K1X.sln"
+# Bare `msbuild` is not on PATH with Build Tools alone.
+MSBUILD   := "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\MSBuild\\Current\\Bin\\MSBuild.exe"
+
+default:
+    @just --list
+
+projucer:
+    {{PROJUCER}} {{PROJECT}}
+
+resave:
+    {{PROJUCER}} --resave {{PROJECT}}
+    # OneDrive can lag the sln behind "Finished saving".
+    $n=0; while (-not (Test-Path '{{SOLUTION}}') -and $n -lt 20) { Start-Sleep -Milliseconds 250; $n++ }
+
+# PNG → Builds/.../icon.ico, then wipe compiled .res so the next build relinks it.
+# `just resave` does not refresh icon.ico when the PNG changes.
+icon:
+    magick assets/logo.png -define icon:auto-resize=256,128,64,48,32,16 Builds\VisualStudio2022\icon.ico
+    Get-ChildItem Builds\VisualStudio2022 -Recurse -Filter resources.res | Remove-Item -Force
+
+build-debug: resave
+    & '{{MSBUILD}}' {{SOLUTION}} /p:Configuration=Debug /p:Platform=x64 /m
+
+build-release: resave
+    & '{{MSBUILD}}' {{SOLUTION}} /p:Configuration=Release /p:Platform=x64 /m
+
+build-dist: build-release
+    if (Test-Path dist) { Remove-Item dist -Recurse -Force }
+    New-Item dist -ItemType Directory | Out-Null
+    Copy-Item -Recurse 'Builds\VisualStudio2022\x64\Release\VST3\K1X.vst3' dist
+    New-Item dist\Standalone -ItemType Directory | Out-Null
+    Copy-Item 'Builds\VisualStudio2022\x64\Release\Standalone Plugin\K1X.exe' dist\Standalone
+    $ver = (git describe --tags --abbrev=0 2>$null); if (-not $ver) { $ver = ([xml](Get-Content '{{PROJECT}}')).JUCERPROJECT.version }; Compress-Archive -Path dist\K1X.vst3, dist\Standalone -DestinationPath "dist\K1X-$ver-win-x64.zip" -Force
+
+clean:
+    & '{{MSBUILD}}' {{SOLUTION}} /t:Clean /p:Configuration=Debug /p:Platform=x64
+    & '{{MSBUILD}}' {{SOLUTION}} /t:Clean /p:Configuration=Release /p:Platform=x64
+
+rebuild: clean build-debug
+
+vs:
+    start {{SOLUTION}}
+
+check:
+    cmd /c "call `"C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat`" >nul && cl /nologo /EHsc /std:c++17 /I src tests\kick_check.cpp /Fo:tests\kick_check.obj /Fe:tests\kick_check.exe && tests\kick_check.exe"
