@@ -21,7 +21,7 @@ K1X.jucer
 
 ## Version
 - Jucer `version=` is what the binary and About dialog show.
-- Git tags must match that string (`0.0.1`).
+- Git tags must match that string (`0.0.2`).
 - `just build-dist` names the zip from the git tag if one exists, else the jucer version.
 
 ## Do NOT
