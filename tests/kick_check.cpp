@@ -41,6 +41,10 @@ int main()
     assert (std::abs (q - 0.5f) < 1e-4f);
     assert (k1x::lengthSeconds (0, 120.f) == 0.f);
 
+    assert (std::abs (k1x::midiNoteToHz (69) - 440.f) < 1e-3f);
+    assert (std::abs (k1x::midiNoteToHz (57) - 220.f) < 1e-3f); // A3
+    assert (std::abs (k1x::midiNoteToHz (81) - 880.f) < 1e-3f); // A5
+
     p.lengthSec = 0.f;
     std::vector<float> longBuf (88200);
     p.style = 1; // 808

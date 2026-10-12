@@ -25,4 +25,9 @@ inline float lengthSeconds (int lengthChoice, float bpm)
     return 0.f; // free — voice uses decay
 }
 
+inline float midiNoteToHz (int note)
+{
+    return 440.f * std::pow (2.f, (float) (note - 69) / 12.f);
+}
+
 } // namespace k1x

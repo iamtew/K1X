@@ -20,5 +20,4 @@ A 909-inspired kick (plus 808 / 707 / Tight / Hard) you can tune and process, wi
 
 - Circuit-level 909 clone
 - Reorderable FX rack
-- Chromatic MIDI pitch
 - Preset library

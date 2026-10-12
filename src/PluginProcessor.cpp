@@ -106,13 +106,22 @@ void K1XAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mi
     buffer.clear();
 
     bool trig = pendingTrig.exchange (false, std::memory_order_relaxed);
+    int midiNote = -1;
     for (const auto meta : midi)
         if (meta.getMessage().isNoteOn())
+        {
             trig = true;
+            midiNote = meta.getMessage().getNoteNumber();
+        }
     midi.clear();
 
     if (trig)
-        voice.trigger (currentParams());
+    {
+        auto p = currentParams();
+        if (midiNote >= 0)
+            p.tuneHz = k1x::midiNoteToHz (midiNote);
+        voice.trigger (p);
+    }
 
     auto* l = buffer.getWritePointer (0);
     const int n = buffer.getNumSamples();

@@ -1,6 +1,6 @@
 # K1X manual
 
-Kick one-shot (909 default). MIDI note-on retriggers. Tune sets the body pitch; MIDI note number is ignored.
+Kick one-shot (909 default). MIDI note-on retriggers and sets body pitch from the note (A4 = 440 Hz). Tune knob is for Standalone Play, waveform, and WAV export.
 
 ## Knobs
 

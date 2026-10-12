@@ -5,7 +5,7 @@ PluginProcessor owns APVTS and one KickVoice.
 Audio thread:
 
 1. MIDI note-on or UI Play sets a trigger
-2. Voice reads params (style recipe, length from host BPM)
+2. MIDI note sets body Hz; Play uses the Tune knob. Voice also reads style and length (host BPM)
 3. Click + sine → tanh → HP → LP → lo/hi → length gate → stereo copy
 
 Message thread:
