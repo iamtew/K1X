@@ -27,7 +27,7 @@ Parallel send after the kick. **Dry** is the unprocessed kick; **FX** is Distort
 
 - **Drive** — extra tanh on the send (separate from the kick Drive knob).
 - **Delay** — Time, feedback, low-pass Cut. **Sync** uses host BPM and **Div** (1/16 … 1/2).
-- **Reverb** — Size, Damp, Width.
+- **Reverb** — Predelay (ms), Size, Damp, Width. **Sync** snaps Predelay to 1/64 … 1/8 of host BPM.
 
 ## Post EQ (same Effects page)
 
