@@ -1,0 +1,43 @@
+#include "dsp/KickRender.h"
+#include "ui/VersionCompare.h"
+
+#include <cassert>
+#include <cmath>
+#include <cstdio>
+#include <vector>
+
+int main()
+{
+    k1x::KickVoice::Params p;
+    std::vector<float> buf (44100);
+    k1x::renderKick (buf.data(), (int) buf.size(), 44100.0, p);
+
+    float peak = 0.f, energy = 0.f;
+    for (float s : buf)
+    {
+        peak = std::max (peak, std::abs (s));
+        energy += s * s;
+    }
+    assert (peak > 0.05f);
+    assert (peak < 2.f);
+    assert (energy > 1.f);
+
+    p.lengthSec = 0.125f; // 1/16 at 120 BPM
+    k1x::renderKick (buf.data(), (int) buf.size(), 44100.0, p);
+    float tail = 0.f;
+    const int after = (int) (0.125f * 44100.f) + 64;
+    for (int i = after; i < (int) buf.size(); ++i)
+        tail = std::max (tail, std::abs (buf[(size_t) i]));
+    assert (tail < 1e-4f);
+
+    const float q = k1x::lengthSeconds (1, 120.f);
+    assert (std::abs (q - 0.5f) < 1e-4f);
+    assert (k1x::lengthSeconds (0, 120.f) == 0.f);
+
+    std::vector<std::string> tags { "0.0.2", "v0.0.1" };
+    assert (k1x::newestNewerTag (tags, "0.0.1") == "0.0.2");
+    assert (k1x::newestNewerTag (tags, "0.0.2").empty());
+
+    std::printf ("kick_check ok  peak=%.3f energy=%.1f\n", peak, energy);
+    return 0;
+}
