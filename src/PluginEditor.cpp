@@ -24,6 +24,13 @@ juce::Font boldFont (float h)
 {
     return juce::Font (juce::FontOptions (h).withStyle ("Bold"));
 }
+
+constexpr int kMenuInit = 1;
+constexpr int kMenuSave = 2;
+constexpr int kMenuSaveAs = 3;
+constexpr int kMenuExport = 4;
+constexpr int kMenuImport = 5;
+constexpr int kMenuFiles = 100;
 } // namespace
 
 K1XAudioProcessorEditor::Knob::Knob (juce::AudioProcessorValueTreeState& st,
@@ -257,6 +264,61 @@ void K1XAudioProcessorEditor::AboutBox::checkForUpdate()
     }).detach();
 }
 
+void K1XAudioProcessorEditor::PatchBar::setText (const juce::String& t)
+{
+    if (text == t)
+        return;
+    text = t;
+    repaint();
+}
+
+void K1XAudioProcessorEditor::PatchBar::paint (juce::Graphics& g)
+{
+    auto r = getLocalBounds().toFloat();
+    g.setColour (kDark);
+    g.fillRoundedRectangle (r, 4.f);
+    g.setColour (kMetal.withAlpha (0.35f));
+    g.drawRoundedRectangle (r.reduced (0.5f), 4.f, 1.f);
+
+    auto left = r.removeFromLeft (18.f);
+    auto right = r.removeFromRight (18.f);
+    auto chev = [] (juce::Rectangle<float> box, bool back)
+    {
+        juce::Path p;
+        const float cx = box.getCentreX();
+        const float cy = box.getCentreY();
+        if (back)
+            p.addTriangle (cx + 3.f, cy - 5.f, cx - 4.f, cy, cx + 3.f, cy + 5.f);
+        else
+            p.addTriangle (cx - 3.f, cy - 5.f, cx + 4.f, cy, cx - 3.f, cy + 5.f);
+        return p;
+    };
+    g.setColour (kMetal);
+    g.fillPath (chev (left, true));
+    g.fillPath (chev (right, false));
+    g.setFont (boldFont (12.f));
+    g.drawText (text, r.toNearestInt(), juce::Justification::centred, false);
+}
+
+void K1XAudioProcessorEditor::PatchBar::mouseUp (const juce::MouseEvent& e)
+{
+    if (! e.mouseWasClicked())
+        return;
+    const int w = getWidth();
+    if (e.x < 20)
+    {
+        if (onStep)
+            onStep (-1);
+    }
+    else if (e.x > w - 20)
+    {
+        if (onStep)
+            onStep (1);
+    }
+    else if (onOpen)
+        onOpen();
+}
+
 K1XAudioProcessorEditor::K1XAudioProcessorEditor (K1XAudioProcessor& p)
     : juce::AudioProcessorEditor (p), proc (p)
 {
@@ -297,6 +359,11 @@ K1XAudioProcessorEditor::K1XAudioProcessorEditor (K1XAudioProcessor& p)
     addAndMakeVisible (lengthBox);
     lengthAtt = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment> (
         proc.apvts, ParamID::length, lengthBox);
+
+    patchBar.onStep = [this] (int d) { cyclePatch (d); };
+    patchBar.onOpen = [this] { openPatchMenu(); };
+    addAndMakeVisible (patchBar);
+    refreshPatchName();
 
     standalone = juce::PluginHostType::getPluginLoadedAs() == juce::AudioProcessor::wrapperType_Standalone;
     playBtn.setClickingTogglesState (false);
@@ -339,6 +406,7 @@ void K1XAudioProcessorEditor::timerCallback()
 {
     if (waveDirty)
         rebuildWave();
+    refreshPatchName();
 }
 
 void K1XAudioProcessorEditor::rebuildWave()
@@ -388,7 +456,9 @@ void K1XAudioProcessorEditor::paint (juce::Graphics& g)
 void K1XAudioProcessorEditor::resized()
 {
     auto r = getLocalBounds().reduced (kPad);
-    r.removeFromTop (kTitleH);
+    auto title = r.removeFromTop (kTitleH);
+    title.removeFromLeft (kTitleHitW);
+    patchBar.setBounds (title.removeFromRight (juce::jmin (220, title.getWidth())).reduced (4, 4));
     wave.setBounds (r.removeFromTop (110).reduced (0, 4));
 
     auto tools = r.removeFromTop (28);
@@ -423,6 +493,134 @@ void K1XAudioProcessorEditor::mouseUp (const juce::MouseEvent& e)
 {
     if (e.mouseWasClicked() && titleHitBounds().contains (e.getPosition()))
         openAbout();
+}
+
+void K1XAudioProcessorEditor::refreshPatchName()
+{
+    patchBar.setText (proc.patchName());
+}
+
+void K1XAudioProcessorEditor::cyclePatch (int delta)
+{
+    const auto names = proc.patchNames();
+    if (names.isEmpty())
+        return;
+    const auto cur = proc.patchName();
+    int idx = names.indexOf (cur);
+    if (idx < 0)
+        idx = delta > 0 ? 0 : names.size() - 1;
+    else
+        idx = (idx + delta + names.size()) % names.size();
+    proc.loadPatchByName (names[idx]);
+    refreshPatchName();
+}
+
+void K1XAudioProcessorEditor::openPatchMenu()
+{
+    juce::PopupMenu m;
+    const auto names = proc.patchNames();
+    const auto cur = proc.patchName();
+    m.addItem (kMenuInit, "Init Patch", true, cur == "Init Patch");
+    m.addSeparator();
+    m.addItem (kMenuSave, "Save");
+    m.addItem (kMenuSaveAs, "Save As...");
+    m.addItem (kMenuExport, "Export...");
+    m.addItem (kMenuImport, "Import...");
+    if (names.size() > 0)
+    {
+        m.addSeparator();
+        for (int i = 0; i < names.size(); ++i)
+            m.addItem (kMenuFiles + i, names[i], true, names[i] == cur);
+    }
+
+    juce::Component::SafePointer<K1XAudioProcessorEditor> safe (this);
+    m.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (patchBar),
+                     [safe, names] (int result)
+                     {
+                         if (safe == nullptr || result <= 0)
+                             return;
+                         if (result == kMenuInit)
+                             safe->proc.initPatch();
+                         else if (result == kMenuSave)
+                         {
+                             if (! safe->proc.savePatch())
+                                 safe->chooseSaveAs();
+                         }
+                         else if (result == kMenuSaveAs)
+                             safe->chooseSaveAs();
+                         else if (result == kMenuExport)
+                             safe->chooseExport();
+                         else if (result == kMenuImport)
+                             safe->chooseImport();
+                         else if (result >= kMenuFiles)
+                         {
+                             const int i = result - kMenuFiles;
+                             if (juce::isPositiveAndBelow (i, names.size()))
+                                 safe->proc.loadPatchByName (names[i]);
+                         }
+                         safe->refreshPatchName();
+                     });
+}
+
+void K1XAudioProcessorEditor::chooseSaveAs()
+{
+    const auto start = proc.patchesDir().getChildFile ("Patch.k1xp");
+    chooser = std::make_unique<juce::FileChooser> ("Save Patch", start, "*.k1xp");
+    juce::Component::SafePointer<K1XAudioProcessorEditor> safe (this);
+    chooser->launchAsync (juce::FileBrowserComponent::saveMode
+                              | juce::FileBrowserComponent::canSelectFiles
+                              | juce::FileBrowserComponent::warnAboutOverwriting,
+                          [safe] (const juce::FileChooser& c)
+                          {
+                              if (safe == nullptr)
+                                  return;
+                              auto file = c.getResult();
+                              if (file.getFullPathName().isEmpty())
+                                  return;
+                              safe->proc.savePatchAs (file.getFileNameWithoutExtension());
+                              safe->refreshPatchName();
+                          });
+}
+
+void K1XAudioProcessorEditor::chooseExport()
+{
+    const auto start = juce::File::getSpecialLocation (juce::File::userDocumentsDirectory)
+                           .getChildFile ("K1X Patch.k1xp");
+    chooser = std::make_unique<juce::FileChooser> ("Export Patch", start, "*.k1xp");
+    juce::Component::SafePointer<K1XAudioProcessorEditor> safe (this);
+    chooser->launchAsync (juce::FileBrowserComponent::saveMode
+                              | juce::FileBrowserComponent::canSelectFiles
+                              | juce::FileBrowserComponent::warnAboutOverwriting,
+                          [safe] (const juce::FileChooser& c)
+                          {
+                              if (safe == nullptr)
+                                  return;
+                              auto file = c.getResult();
+                              if (file.getFullPathName().isEmpty())
+                                  return;
+                              safe->proc.exportPatch (file);
+                          });
+}
+
+void K1XAudioProcessorEditor::chooseImport()
+{
+    chooser = std::make_unique<juce::FileChooser> (
+        "Import Patch",
+        juce::File::getSpecialLocation (juce::File::userDocumentsDirectory),
+        "*.k1xp");
+    juce::Component::SafePointer<K1XAudioProcessorEditor> safe (this);
+    chooser->launchAsync (juce::FileBrowserComponent::openMode
+                              | juce::FileBrowserComponent::canSelectFiles,
+                          [safe] (const juce::FileChooser& c)
+                          {
+                              if (safe == nullptr)
+                                  return;
+                              auto file = c.getResult();
+                              if (! file.existsAsFile())
+                                  return;
+                              safe->proc.importPatch (file);
+                              safe->refreshPatchName();
+                          });
 }
 
 void K1XAudioProcessorEditor::openAbout()

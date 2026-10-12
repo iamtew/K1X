@@ -3,6 +3,7 @@
 #include "PluginProcessor.h"
 
 #include <atomic>
+#include <functional>
 #include <vector>
 
 class K1XAudioProcessorEditor : public juce::AudioProcessorEditor,
@@ -24,6 +25,12 @@ private:
     juce::Rectangle<int> titleHitBounds() const;
     void openAbout();
     void exportWav();
+    void refreshPatchName();
+    void openPatchMenu();
+    void cyclePatch (int delta);
+    void chooseSaveAs();
+    void chooseExport();
+    void chooseImport();
 
     K1XAudioProcessor& proc;
 
@@ -63,6 +70,17 @@ private:
         std::vector<float> samples;
     };
 
+    struct PatchBar : public juce::Component
+    {
+        void paint (juce::Graphics& g) override;
+        void mouseUp (const juce::MouseEvent& e) override;
+        void setText (const juce::String& t);
+
+        juce::String text;
+        std::function<void (int)> onStep;
+        std::function<void()> onOpen;
+    };
+
     struct Knob : public juce::Component
     {
         Knob (juce::AudioProcessorValueTreeState& st, const juce::String& id, const juce::String& name);
@@ -79,6 +97,7 @@ private:
     juce::Label lengthLabel;
     juce::ComboBox lengthBox;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> lengthAtt;
+    PatchBar patchBar;
     juce::ToggleButton playBtn { "Play" };
     juce::ToggleButton exportBtn { "Export WAV" };
     AboutBox aboutBox;

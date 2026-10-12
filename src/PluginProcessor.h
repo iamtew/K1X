@@ -43,6 +43,16 @@ public:
     k1x::KickVoice::Params currentParams() const;
     void renderShot (float* dest, int n, double sampleRate) const;
 
+    juce::File patchesDir() const;
+    juce::StringArray patchNames() const;
+    juce::String patchName() const;
+    void initPatch();
+    bool loadPatchByName (const juce::String& name);
+    bool savePatch();
+    bool savePatchAs (const juce::String& name);
+    bool exportPatch (const juce::File& dest);
+    bool importPatch (const juce::File& src);
+
 private:
     float raw (const char* id) const;
     int lengthChoice() const;

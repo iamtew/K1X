@@ -1,10 +1,41 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
+#include <cstring>
+
+namespace
+{
+const juce::Identifier kPatchName { "PATCH_NAME" };
+constexpr const char* kInitPatch = "Init Patch";
+constexpr const char* kPatchExt = ".k1xp";
+
+juce::File libraryRoot()
+{
+    return juce::File::getSpecialLocation (juce::File::userApplicationDataDirectory)
+        .getChildFile ("Stupid Systems LLC")
+        .getChildFile ("K1X");
+}
+
+juce::File ensureDir (juce::File dir)
+{
+    dir.createDirectory();
+    return dir;
+}
+
+juce::String legalStem (const juce::String& name)
+{
+    auto stem = juce::File::createLegalFileName (name.trim());
+    if (stem.endsWithIgnoreCase (kPatchExt))
+        stem = stem.dropLastCharacters ((int) std::strlen (kPatchExt));
+    return stem;
+}
+} // namespace
+
 K1XAudioProcessor::K1XAudioProcessor()
     : AudioProcessor (BusesProperties().withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
       apvts (*this, nullptr, "PARAMS", createParameterLayout())
 {
+    apvts.state.setProperty (kPatchName, kInitPatch, nullptr);
 }
 
 void K1XAudioProcessor::prepareToPlay (double sampleRate, int)
@@ -87,6 +118,100 @@ void K1XAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mi
 
     for (int ch = 1; ch < buffer.getNumChannels(); ++ch)
         buffer.copyFrom (ch, 0, buffer, 0, 0, n);
+}
+
+juce::File K1XAudioProcessor::patchesDir() const
+{
+    return ensureDir (libraryRoot().getChildFile ("Patches"));
+}
+
+juce::StringArray K1XAudioProcessor::patchNames() const
+{
+    juce::StringArray names;
+    for (const auto& entry : juce::RangedDirectoryIterator (patchesDir(), false, "*.k1xp"))
+        names.add (entry.getFile().getFileNameWithoutExtension());
+    names.sortNatural();
+    return names;
+}
+
+juce::String K1XAudioProcessor::patchName() const
+{
+    return apvts.state.getProperty (kPatchName, kInitPatch).toString();
+}
+
+void K1XAudioProcessor::initPatch()
+{
+    for (auto* base : getParameters())
+    {
+        auto* param = dynamic_cast<juce::RangedAudioParameter*> (base);
+        if (param == nullptr)
+            continue;
+        param->beginChangeGesture();
+        param->setValueNotifyingHost (param->getDefaultValue());
+        param->endChangeGesture();
+    }
+    apvts.state.setProperty (kPatchName, kInitPatch, nullptr);
+}
+
+bool K1XAudioProcessor::loadPatchByName (const juce::String& name)
+{
+    const auto stem = legalStem (name);
+    if (stem.isEmpty() || stem == kInitPatch)
+    {
+        initPatch();
+        return true;
+    }
+    const auto src = patchesDir().getChildFile (stem + kPatchExt);
+    auto xml = juce::XmlDocument::parse (src);
+    if (xml == nullptr || ! xml->hasTagName (apvts.state.getType()))
+        return false;
+    apvts.replaceState (juce::ValueTree::fromXml (*xml));
+    apvts.state.setProperty (kPatchName, stem, nullptr);
+    return true;
+}
+
+bool K1XAudioProcessor::savePatchAs (const juce::String& name)
+{
+    const auto stem = legalStem (name);
+    if (stem.isEmpty() || stem == kInitPatch)
+        return false;
+    apvts.state.setProperty (kPatchName, stem, nullptr);
+    auto xml = apvts.copyState().createXml();
+    if (xml == nullptr)
+        return false;
+    return patchesDir().getChildFile (stem + kPatchExt).replaceWithText (xml->toString());
+}
+
+bool K1XAudioProcessor::savePatch()
+{
+    const auto name = patchName();
+    if (name.isEmpty() || name == kInitPatch)
+        return false;
+    return savePatchAs (name);
+}
+
+bool K1XAudioProcessor::exportPatch (const juce::File& dest)
+{
+    auto file = dest.hasFileExtension ("k1xp") ? dest : dest.withFileExtension ("k1xp");
+    auto xml = apvts.copyState().createXml();
+    if (xml == nullptr)
+        return false;
+    return file.replaceWithText (xml->toString());
+}
+
+bool K1XAudioProcessor::importPatch (const juce::File& src)
+{
+    const auto stem = legalStem (src.getFileNameWithoutExtension());
+    if (stem.isEmpty())
+        return false;
+    const auto dest = patchesDir().getChildFile (stem + kPatchExt);
+    if (src.getFullPathName() != dest.getFullPathName())
+    {
+        dest.deleteFile();
+        if (! src.copyFileTo (dest))
+            return false;
+    }
+    return loadPatchByName (stem);
 }
 
 void K1XAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
