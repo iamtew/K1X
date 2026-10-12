@@ -60,7 +60,7 @@ void K1XAudioProcessorEditor::Knob::resized()
     slider.setBounds (r);
 }
 
-K1XAudioProcessorEditor::FxPage::FxPage (K1XAudioProcessor& p) : eq (p)
+K1XAudioProcessorEditor::FxPage::FxPage (K1XAudioProcessor& p) : proc (p), eq (p)
 {
     auto setupOn = [this, &p] (juce::ToggleButton& b, const char* id,
                                std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment>& att)
@@ -72,13 +72,15 @@ K1XAudioProcessorEditor::FxPage::FxPage (K1XAudioProcessor& p) : eq (p)
     setupOn (dlyOn, ParamID::fxDlyOn, dlyOnAtt);
     setupOn (dlySync, ParamID::fxDlySync, dlySyncAtt);
     setupOn (revOn, ParamID::fxRevOn, revOnAtt);
+    setupOn (revSync, ParamID::fxRevSync, revSyncAtt);
 
     struct Spec { const char* id; const char* name; };
     static constexpr Spec kFxKnobs[] = {
         { ParamID::fxDry, "Dry" }, { ParamID::fxWet, "FX" },
         { ParamID::fxDstDrive, "Drive" },
         { ParamID::fxDlyTime, "Time" }, { ParamID::fxDlyFb, "Fb" }, { ParamID::fxDlyCut, "Cut" },
-        { ParamID::fxRevSize, "Size" }, { ParamID::fxRevDamp, "Damp" }, { ParamID::fxRevWidth, "Width" }
+        { ParamID::fxRevPredelay, "Pre" }, { ParamID::fxRevSize, "Size" },
+        { ParamID::fxRevDamp, "Damp" }, { ParamID::fxRevWidth, "Width" }
     };
     for (auto& s : kFxKnobs)
     {
@@ -100,7 +102,36 @@ K1XAudioProcessorEditor::FxPage::FxPage (K1XAudioProcessor& p) : eq (p)
     dlyDivAtt = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment> (
         p.apvts, ParamID::fxDlyDiv, dlyDiv);
 
+    p.apvts.addParameterListener (ParamID::fxRevSync, this);
+    bindPreKnob();
     addAndMakeVisible (eq);
+}
+
+K1XAudioProcessorEditor::FxPage::~FxPage()
+{
+    proc.apvts.removeParameterListener (ParamID::fxRevSync, this);
+}
+
+void K1XAudioProcessorEditor::FxPage::parameterChanged (const juce::String& id, float)
+{
+    if (id != ParamID::fxRevSync)
+        return;
+    juce::MessageManager::callAsync ([safe = juce::Component::SafePointer<FxPage> (this)]
+    {
+        if (safe != nullptr)
+            safe->bindPreKnob();
+    });
+}
+
+void K1XAudioProcessorEditor::FxPage::bindPreKnob()
+{
+    if (knobs.size() < 7)
+        return;
+    auto* k = knobs[6];
+    k->att.reset();
+    const bool sync = proc.apvts.getRawParameterValue (ParamID::fxRevSync)->load() >= 0.5f;
+    k->att = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (
+        proc.apvts, sync ? ParamID::fxRevDiv : ParamID::fxRevPredelay, k->slider);
 }
 
 void K1XAudioProcessorEditor::FxPage::resized()
@@ -123,7 +154,7 @@ void K1XAudioProcessorEditor::FxPage::resized()
         knobs[2]->setBounds (dist);
 
     fx.removeFromLeft (4);
-    auto delay = fx.removeFromLeft (280);
+    auto delay = fx.removeFromLeft (220);
     auto delayTop = delay.removeFromTop (22);
     dlyOn.setBounds (delayTop.removeFromLeft (52).reduced (2, 1));
     dlySync.setBounds (delayTop.removeFromLeft (48).reduced (2, 1));
@@ -140,12 +171,14 @@ void K1XAudioProcessorEditor::FxPage::resized()
     fx.removeFromLeft (4);
     auto revTop = fx.removeFromTop (22);
     revOn.setBounds (revTop.removeFromLeft (48).reduced (2, 1));
-    const int revW = juce::jmax (1, fx.getWidth() / 3);
-    if (knobs.size() >= 9)
+    revSync.setBounds (revTop.removeFromLeft (48).reduced (2, 1));
+    const int revW = juce::jmax (1, fx.getWidth() / 4);
+    if (knobs.size() >= 10)
     {
         knobs[6]->setBounds (fx.removeFromLeft (revW));
         knobs[7]->setBounds (fx.removeFromLeft (revW));
-        knobs[8]->setBounds (fx);
+        knobs[8]->setBounds (fx.removeFromLeft (revW));
+        knobs[9]->setBounds (fx);
     }
 }
 

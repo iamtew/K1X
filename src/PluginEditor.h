@@ -121,17 +121,23 @@ private:
     };
 
     // Effects send + post EQ. Shares one editor page with Main.
-    struct FxPage : public juce::Component
+    struct FxPage : public juce::Component,
+                    private juce::AudioProcessorValueTreeState::Listener
     {
         explicit FxPage (K1XAudioProcessor& p);
+        ~FxPage() override;
         void resized() override;
+        void parameterChanged (const juce::String&, float) override;
+        void bindPreKnob();
 
+        K1XAudioProcessor& proc;
         juce::OwnedArray<Knob> knobs;
         juce::ToggleButton dstOn { "Dist" };
         juce::ToggleButton dlyOn { "Delay" };
         juce::ToggleButton dlySync { "Sync" };
         juce::ToggleButton revOn { "Rev" };
-        std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> dstOnAtt, dlyOnAtt, dlySyncAtt, revOnAtt;
+        juce::ToggleButton revSync { "Sync" };
+        std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> dstOnAtt, dlyOnAtt, dlySyncAtt, revOnAtt, revSyncAtt;
         juce::ComboBox dlyDiv;
         std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> dlyDivAtt;
         juce::Label dlyDivLabel;
