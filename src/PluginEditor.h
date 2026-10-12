@@ -118,6 +118,9 @@ private:
     PanelLnF panelLnF;
     WaveView wave;
     juce::OwnedArray<Knob> knobs;
+    juce::Label styleLabel;
+    juce::ComboBox styleBox;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> styleAtt;
     juce::Label lengthLabel;
     juce::ComboBox lengthBox;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> lengthAtt;

@@ -2,7 +2,7 @@
 
 ## Vision
 
-A 909-inspired kick you can tune and process, with a length that snaps to the DAW grid. Standalone can preview and export a WAV.
+A 909-inspired kick (plus 808 / 707 / Tight / Hard) you can tune and process, with a length that snaps to the DAW grid. Standalone can preview and export a WAV.
 
 ## MVP
 
@@ -10,6 +10,7 @@ A 909-inspired kick you can tune and process, with a length that snaps to the DA
 - Drive, HPF, tone LP, lo/hi shelves
 - Waveform preview
 - Length: Free / 1/4 / 1/8 / 1/16 from host BPM
+- Style: 909 / 808 / 707 / Tight / Hard
 - VST3 + Standalone
 - Standalone Play + WAV export
 - About + GitHub tag check

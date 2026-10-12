@@ -448,17 +448,30 @@ K1XAudioProcessorEditor::K1XAudioProcessorEditor (K1XAudioProcessor& p)
         addAndMakeVisible (k);
     }
 
-    lengthLabel.setText ("Length", juce::dontSendNotification);
-    lengthLabel.setJustificationType (juce::Justification::centred);
-    lengthLabel.setColour (juce::Label::textColourId, kMetal);
-    addAndMakeVisible (lengthLabel);
-    lengthBox.setColour (juce::ComboBox::textColourId, kMetal);
-    lengthBox.setColour (juce::ComboBox::arrowColourId, kMetal);
+    auto setupCombo = [this] (juce::Label& label, juce::ComboBox& box, const juce::String& name)
+    {
+        label.setText (name, juce::dontSendNotification);
+        label.setJustificationType (juce::Justification::centred);
+        label.setColour (juce::Label::textColourId, kMetal);
+        addAndMakeVisible (label);
+        box.setColour (juce::ComboBox::textColourId, kMetal);
+        box.setColour (juce::ComboBox::arrowColourId, kMetal);
+        addAndMakeVisible (box);
+    };
+    setupCombo (styleLabel, styleBox, "Style");
+    styleBox.addItem ("909", 1);
+    styleBox.addItem ("808", 2);
+    styleBox.addItem ("707", 3);
+    styleBox.addItem ("Tight", 4);
+    styleBox.addItem ("Hard", 5);
+    styleAtt = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment> (
+        proc.apvts, ParamID::style, styleBox);
+
+    setupCombo (lengthLabel, lengthBox, "Length");
     lengthBox.addItem ("Free", 1);
     lengthBox.addItem ("1/4", 2);
     lengthBox.addItem ("1/8", 3);
     lengthBox.addItem ("1/16", 4);
-    addAndMakeVisible (lengthBox);
     lengthAtt = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment> (
         proc.apvts, ParamID::length, lengthBox);
 
@@ -483,7 +496,7 @@ K1XAudioProcessorEditor::K1XAudioProcessorEditor (K1XAudioProcessor& p)
 
     for (auto* id : { ParamID::tune, ParamID::pitchDrop, ParamID::pitchDecay, ParamID::click,
                       ParamID::punch, ParamID::decay, ParamID::drive, ParamID::hpf, ParamID::tone,
-                      ParamID::lo, ParamID::hi, ParamID::level, ParamID::length })
+                      ParamID::lo, ParamID::hi, ParamID::level, ParamID::length, ParamID::style })
         proc.apvts.addParameterListener (id, this);
 
     setSize (kEditorW, kEditorH);
@@ -495,7 +508,7 @@ K1XAudioProcessorEditor::~K1XAudioProcessorEditor()
     stopTimer();
     for (auto* id : { ParamID::tune, ParamID::pitchDrop, ParamID::pitchDecay, ParamID::click,
                       ParamID::punch, ParamID::decay, ParamID::drive, ParamID::hpf, ParamID::tone,
-                      ParamID::lo, ParamID::hi, ParamID::level, ParamID::length })
+                      ParamID::lo, ParamID::hi, ParamID::level, ParamID::length, ParamID::style })
         proc.apvts.removeParameterListener (id, this);
     setLookAndFeel (nullptr);
 }
@@ -567,6 +580,9 @@ void K1XAudioProcessorEditor::resized()
     wave.setBounds (r.removeFromTop (110).reduced (0, 4));
 
     auto tools = r.removeFromTop (28);
+    styleLabel.setBounds (tools.removeFromLeft (44));
+    styleBox.setBounds (tools.removeFromLeft (80).reduced (0, 2));
+    tools.removeFromLeft (8);
     lengthLabel.setBounds (tools.removeFromLeft (52));
     lengthBox.setBounds (tools.removeFromLeft (80).reduced (0, 2));
     if (standalone)

@@ -6,8 +6,8 @@
 namespace k1x
 {
 
-// 909-ish analog kick: sine body with pitch drop + noise click, then drive/filters.
-// Not a circuit model. Constants below are the tuning knobs if it sits off on real hardware.
+// Analog-ish kick: sine body with pitch drop + noise click, then drive/filters.
+// Style only changes a few envelope/click/harmonic coeffs. Not a circuit model.
 struct KickVoice
 {
     struct Params
@@ -25,6 +25,7 @@ struct KickVoice
         float hi         = 0.45f;
         float level      = 0.75f;  // applied after the voice (live master)
         float lengthSec  = 0.f;    // 0 = free (follow decay)
+        int   style      = 0;      // 0=909 1=808 2=707 3=Tight 4=Hard
     };
 
     void prepare (double sampleRate)
@@ -40,6 +41,7 @@ struct KickVoice
         phase = 0.0;
         noise = 0xAce1u;
         active_ = true;
+        applyStyle();
         // Keep filter state on retrigger — zeroing it pops.
 
         const float attMs = 0.3f + params.punch * 11.7f;
@@ -48,7 +50,7 @@ struct KickVoice
             attackN = 1;
 
         // ponytail: free length = ~8 decays then stop; snap length wins if set.
-        float life = params.decay * 8.f;
+        float life = ampDec * 8.f;
         if (life < 0.05f)
             life = 0.05f;
         if (params.lengthSec > 0.f)
@@ -71,27 +73,29 @@ struct KickVoice
             return 0.f;
 
         const double t = (double) pos / sr;
-        // 909 pitch envelope is roughly exponential down to the tuned fundamental.
+        // Pitch envelope is roughly exponential down to the tuned fundamental.
         const float startHz = params.tuneHz * std::pow (2.f, params.pitchDrop);
         const float freq = params.tuneHz
-            + (startHz - params.tuneHz) * std::exp ((float) (-t / (double) params.pitchDecay));
+            + (startHz - params.tuneHz) * std::exp ((float) (-t / (double) pitchDec));
         phase += (double) freq / sr;
         if (phase >= 1.0)
             phase -= std::floor (phase);
-        const float body = std::sin ((float) (phase * 6.283185307179586));
+        const float twopi = 6.283185307179586f;
+        const float ph = (float) (phase * (double) twopi);
+        const float body = std::sin (ph) + harmonic * std::sin (ph + ph);
 
         float amp = 0.f;
         if (pos < attackN)
             amp = (float) pos / (float) attackN;
         else
-            amp = std::exp ((float) (-(t - (double) attackN / sr) / (double) params.decay));
+            amp = std::exp ((float) (-(t - (double) attackN / sr) / (double) ampDec));
 
-        // Click: ~4 ms noise burst, same attack as the body so sample 0 is not a pop.
-        const float clickEnv = std::exp ((float) (-t / 0.004));
+        // Click: HP noise burst, same attack as the body so sample 0 is not a pop.
+        const float clickEnv = std::exp ((float) (-t / (double) clickTau));
         noise = noise * 1664525u + 1013904223u;
         const float n = ((float) (int) (noise >> 8) * (1.f / 8388608.f)) - 1.f;
         clickLp += 0.35f * (n - clickLp);
-        const float clickSig = (n - clickLp) * clickEnv * params.click * amp;
+        const float clickSig = (n - clickLp) * clickEnv * params.click * clickMul * amp;
 
         float x = body * amp + clickSig;
         // Drive gain sits around 1..5 so tanh actually saturates.
@@ -143,6 +147,29 @@ private:
         return std::pow (10.f, db / 20.f);
     }
 
+    void applyStyle()
+    {
+        // 909 / 808 / 707 / Tight / Hard — click time, click gain, pitch/amp decay, 2nd harmonic.
+        clickTau = 0.004f;
+        clickMul = 1.f;
+        float pMul = 1.f, dMul = 1.f;
+        harmonic = 0.f;
+        switch (params.style)
+        {
+            case 1: clickTau = 0.008f; clickMul = 0.15f; pMul = 2.5f; dMul = 2.2f; break;
+            case 2: clickTau = 0.002f; clickMul = 1.4f;  pMul = 0.7f; dMul = 0.55f; harmonic = 0.08f; break;
+            case 3: clickTau = 0.003f; clickMul = 1.1f;  pMul = 0.8f; dMul = 0.45f; break;
+            case 4: clickTau = 0.003f; clickMul = 1.2f;  pMul = 1.f;  dMul = 0.8f;  harmonic = 0.25f; break;
+            default: break;
+        }
+        pitchDec = params.pitchDecay * pMul;
+        if (pitchDec < 0.004f)
+            pitchDec = 0.004f;
+        ampDec = params.decay * dMul;
+        if (ampDec < 0.02f)
+            ampDec = 0.02f;
+    }
+
     void resetFilters()
     {
         hpZ = lpZ = loZ = hiZ = clickLp = 0.f;
@@ -157,6 +184,7 @@ private:
     bool active_ = false;
     std::uint32_t noise = 1;
     float hpZ = 0, lpZ = 0, loZ = 0, hiZ = 0, clickLp = 0;
+    float clickTau = 0.004f, clickMul = 1.f, pitchDec = 0.04f, ampDec = 0.35f, harmonic = 0.f;
 };
 
 } // namespace k1x

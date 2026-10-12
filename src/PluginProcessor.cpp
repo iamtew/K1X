@@ -91,6 +91,7 @@ k1x::KickVoice::Params K1XAudioProcessor::currentParams() const
     p.hi         = raw (ParamID::hi);
     p.level      = raw (ParamID::level);
     p.lengthSec  = k1x::lengthSeconds (lengthChoice(), hostBpm());
+    p.style      = juce::roundToInt (raw (ParamID::style));
     return p;
 }
 

@@ -15,4 +15,5 @@ constexpr const char* lo         = "lo";
 constexpr const char* hi         = "hi";
 constexpr const char* level      = "level";
 constexpr const char* length     = "length";
+constexpr const char* style      = "style";
 }

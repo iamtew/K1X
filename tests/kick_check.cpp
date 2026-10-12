@@ -41,6 +41,24 @@ int main()
     assert (std::abs (q - 0.5f) < 1e-4f);
     assert (k1x::lengthSeconds (0, 120.f) == 0.f);
 
+    p.lengthSec = 0.f;
+    std::vector<float> longBuf (88200);
+    p.style = 1; // 808
+    k1x::renderKick (longBuf.data(), (int) longBuf.size(), 44100.0, p);
+    float boom = 0.f;
+    const int late = (int) (1.3f * 44100.f);
+    for (int i = late; i < (int) longBuf.size(); ++i)
+        boom = std::max (boom, std::abs (longBuf[(size_t) i]));
+    assert (boom > 0.01f);
+
+    p.style = 3; // Tight
+    k1x::renderKick (longBuf.data(), (int) longBuf.size(), 44100.0, p);
+    float tightTail = 0.f;
+    for (int i = late; i < (int) longBuf.size(); ++i)
+        tightTail = std::max (tightTail, std::abs (longBuf[(size_t) i]));
+    assert (tightTail < 1e-4f);
+    assert (boom > tightTail);
+
     std::vector<std::string> tags { "0.0.2", "v0.0.1" };
     assert (k1x::newestNewerTag (tags, "0.0.1") == "0.0.2");
     assert (k1x::newestNewerTag (tags, "0.0.2").empty());

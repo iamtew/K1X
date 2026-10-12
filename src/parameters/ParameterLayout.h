@@ -72,5 +72,9 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout
                                                          "Length",
                                                          StringArray { "Free", "1/4", "1/8", "1/16" },
                                                          0));
+    layout.add (std::make_unique<AudioParameterChoice> (ParameterID { ParamID::style, 1 },
+                                                         "Style",
+                                                         StringArray { "909", "808", "707", "Tight", "Hard" },
+                                                         0));
     return layout;
 }

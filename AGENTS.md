@@ -1,6 +1,6 @@
 # K1X – Cursor Rules
 
-909-style kick drum VST3 + Standalone. Not a circuit clone. Tune the one-shot with a fixed chain (drive, HP, LP, lo/hi).
+Kick drum VST3 + Standalone (909 / 808 / 707 / Tight / Hard). Not a circuit clone. Tune the one-shot with a fixed chain (drive, HP, LP, lo/hi).
 
 ## Stack
 - JUCE (Projucer workflow only – no CMake)

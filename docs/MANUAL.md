@@ -1,6 +1,6 @@
 # K1X manual
 
-909-style kick. MIDI note-on retriggers. Tune sets the body pitch; MIDI note number is ignored.
+Kick one-shot (909 default). MIDI note-on retriggers. Tune sets the body pitch; MIDI note number is ignored.
 
 ## Knobs
 
@@ -14,6 +14,7 @@
 - **HPF** — rumble cut.
 - **Tone** — low-pass.
 - **Lo / Hi** — shelves (±12 dB around centre).
+- **Style** — 909, 808, 707, Tight, Hard. Changes click, pitch/amp envelopes, and a bit of harmonic. Does not reset knobs.
 - **Length** — Free, or trim to 1/4, 1/8, 1/16 of host BPM (120 if the host has no tempo).
 
 **Volume** (title bar, right) — live master fader and output spectrum. Turns orange for ~800 ms if the output hits 0 dBFS.
