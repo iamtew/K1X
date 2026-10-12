@@ -1,6 +1,7 @@
 #pragma once
 
 #include "PluginProcessor.h"
+#include "ui/EqPage.h"
 
 #include <atomic>
 #include <functional>
@@ -31,6 +32,10 @@ private:
     void chooseSaveAs();
     void chooseExport();
     void chooseImport();
+    void setEditorPage (int page);
+    void openPageMenu();
+    void cyclePage (int delta);
+    void applyPageVisibility();
 
     K1XAudioProcessor& proc;
 
@@ -115,6 +120,24 @@ private:
         std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> att;
     };
 
+    // Effects send + post EQ. Shares one editor page with Main.
+    struct FxPage : public juce::Component
+    {
+        explicit FxPage (K1XAudioProcessor& p);
+        void resized() override;
+
+        juce::OwnedArray<Knob> knobs;
+        juce::ToggleButton dstOn { "Dist" };
+        juce::ToggleButton dlyOn { "Delay" };
+        juce::ToggleButton dlySync { "Sync" };
+        juce::ToggleButton revOn { "Rev" };
+        std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> dstOnAtt, dlyOnAtt, dlySyncAtt, revOnAtt;
+        juce::ComboBox dlyDiv;
+        std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> dlyDivAtt;
+        juce::Label dlyDivLabel;
+        EqPage eq;
+    };
+
     PanelLnF panelLnF;
     WaveView wave;
     juce::OwnedArray<Knob> knobs;
@@ -125,10 +148,13 @@ private:
     juce::ComboBox lengthBox;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> lengthAtt;
     PatchBar patchBar;
+    PatchBar pageBar;
     VolumeStrip volumeStrip { *this };
     juce::ToggleButton playBtn { "Play" };
     juce::ToggleButton exportBtn { "Export WAV" };
+    FxPage fxPage;
     AboutBox aboutBox;
+    int editorPage = 0;
     std::unique_ptr<juce::FileChooser> chooser;
     juce::Image logo;
     bool waveDirty = true;

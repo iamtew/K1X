@@ -20,6 +20,9 @@
         <FILE id="kckH001" name="KickVoice.h" compile="0" resource="0" file="src/dsp/KickVoice.h"/>
         <FILE id="rndH001" name="KickRender.h" compile="0" resource="0" file="src/dsp/KickRender.h"/>
         <FILE id="scpH001" name="OutputScope.h" compile="0" resource="0" file="src/dsp/OutputScope.h"/>
+        <FILE id="eqbH001" name="EqBiquad.h" compile="0" resource="0" file="src/dsp/EqBiquad.h"/>
+        <FILE id="peqH001" name="ParametricEq.h" compile="0" resource="0" file="src/dsp/ParametricEq.h"/>
+        <FILE id="pfxH001" name="PostFx.h" compile="0" resource="0" file="src/dsp/PostFx.h"/>
       </GROUP>
       <GROUP id="prmGrp01" name="parameters">
         <FILE id="pidH001" name="ParameterIDs.h" compile="0" resource="0" file="src/parameters/ParameterIDs.h"/>
@@ -29,6 +32,7 @@
       <GROUP id="uiGrp01" name="ui">
         <FILE id="verH001" name="VersionCompare.h" compile="0" resource="0"
               file="src/ui/VersionCompare.h"/>
+        <FILE id="eqpH001" name="EqPage.h" compile="0" resource="0" file="src/ui/EqPage.h"/>
       </GROUP>
     </GROUP>
   </MAINGROUP>
