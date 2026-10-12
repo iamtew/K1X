@@ -1,6 +1,7 @@
 :root {
   --ink: #151515;
   --chassis: #1a2332;
+  --background: #0f151e;
   --metal: #b7c5d6;
   --orange: #d94214;
   --white: #ffffff;
@@ -10,7 +11,7 @@
 
 body {
   margin: 0;
-  background: var(--chassis);
+  background: var(--background);
   color: var(--metal);
   font: 18px/1.5 system-ui, sans-serif;
 }
