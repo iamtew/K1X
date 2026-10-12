@@ -8,6 +8,8 @@ A 909-inspired kick (plus 808 / 707 / Tight / Hard) you can tune and process, wi
 
 - Sine body + pitch envelope + click
 - Drive, HPF, tone LP, lo/hi shelves
+- Parallel post FX: distortion, delay, reverb, Dry/FX mixer
+- Post EQ (5-band parametric) with spectrum of the processed output
 - Waveform preview
 - Length: Free / 1/4 / 1/8 / 1/16 from host BPM
 - Style: 909 / 808 / 707 / Tight / Hard
