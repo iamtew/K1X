@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../parameters/ParameterIDs.h"
+#include "KickRender.h"
 
 #include <JuceHeader.h>
 #include <cmath>
@@ -21,6 +22,10 @@ struct PostFx
         delay.prepare (spec);
         delay.setMaximumDelayInSamples ((int) std::ceil (sr * 2.0) + 8);
         delay.reset();
+        preDelay.prepare (spec);
+        preDelay.setMaximumDelayInSamples ((int) std::ceil (sr * 1.0) + 8);
+        preDelay.reset();
+        preDelayIdle = true;
         lp.prepare (spec);
         wet.setSize (ch, n);
         scratch.setSize (ch, n);
@@ -44,7 +49,7 @@ struct PostFx
         if (on (apvts, ParamID::fxDlyOn))
             processDelay (n, chs, bpm, apvts);
         if (on (apvts, ParamID::fxRevOn))
-            processReverb (n, chs, apvts);
+            processReverb (n, chs, bpm, apvts);
 
         const float dryG = p (apvts, ParamID::fxDry);
         const float fxG = p (apvts, ParamID::fxWet);
@@ -88,8 +93,7 @@ private:
         {
             const int div = juce::jlimit (0, 3, juce::roundToInt (p (apvts, ParamID::fxDlyDiv)));
             const float beats = div == 0 ? 0.25f : div == 1 ? 0.5f : div == 2 ? 1.f : 2.f;
-            const float b = bpm > 1.f ? bpm : 120.f;
-            delaySec = beats * 60.f / b;
+            delaySec = beatsToSeconds (beats, bpm);
         }
         const float delaySamp = juce::jlimit (1.f, (float) delay.getMaximumDelayInSamples() - 1,
                                               delaySec * (float) sr);
@@ -117,8 +121,10 @@ private:
             wet.copyFrom (ch, 0, scratch, ch, 0, n);
     }
 
-    void processReverb (int n, int chs, juce::AudioProcessorValueTreeState& apvts)
+    void processReverb (int n, int chs, float bpm, juce::AudioProcessorValueTreeState& apvts)
     {
+        applyPredelay (n, chs, bpm, apvts);
+
         juce::dsp::Reverb::Parameters rp;
         rp.roomSize = p (apvts, ParamID::fxRevSize);
         rp.damping = p (apvts, ParamID::fxRevDamp);
@@ -144,6 +150,39 @@ private:
         reverb.process (ctx);
     }
 
+    void applyPredelay (int n, int chs, float bpm, juce::AudioProcessorValueTreeState& apvts)
+    {
+        float delaySec = p (apvts, ParamID::fxRevPredelay) * 0.001f;
+        if (p (apvts, ParamID::fxRevSync) >= 0.5f)
+        {
+            const int div = juce::jlimit (0, 3, juce::roundToInt (p (apvts, ParamID::fxRevDiv)));
+            const float beats = div == 0 ? 0.0625f : div == 1 ? 0.125f : div == 2 ? 0.25f : 0.5f;
+            delaySec = beatsToSeconds (beats, bpm);
+        }
+        if (delaySec < 0.0005f)
+        {
+            if (! preDelayIdle)
+            {
+                preDelay.reset();
+                preDelayIdle = true;
+            }
+            return;
+        }
+        preDelayIdle = false;
+        const float delaySamp = juce::jlimit (1.f, (float) preDelay.getMaximumDelayInSamples() - 1,
+                                              delaySec * (float) sr);
+        preDelay.setDelay (delaySamp);
+        for (int i = 0; i < n; ++i)
+        {
+            for (int ch = 0; ch < chs; ++ch)
+            {
+                const float in = wet.getSample (ch, i);
+                wet.setSample (ch, i, preDelay.popSample (ch));
+                preDelay.pushSample (ch, in);
+            }
+        }
+    }
+
     void ensureSize (const juce::AudioBuffer<float>& buffer)
     {
         // ponytail: grow only if host exceeds prepare size
@@ -166,11 +205,13 @@ private:
 
     juce::dsp::Reverb reverb;
     juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> delay { 192000 };
+    juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> preDelay { 192000 };
     DupIIR lp;
     juce::AudioBuffer<float> wet;
     juce::AudioBuffer<float> scratch;
     double sr = 44100.0;
     bool prepared = false;
+    bool preDelayIdle = true;
 };
 
 } // namespace k1x

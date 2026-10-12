@@ -15,6 +15,12 @@ inline void renderKick (float* dest, int n, double sampleRate, const KickVoice::
         dest[i] = v.process() * p.level;
 }
 
+inline float beatsToSeconds (float beats, float bpm)
+{
+    const float b = bpm > 1.f ? bpm : 120.f;
+    return beats * 60.f / b;
+}
+
 inline float lengthSeconds (int lengthChoice, float bpm)
 {
     if (bpm < 20.f)

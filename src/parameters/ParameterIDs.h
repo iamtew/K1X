@@ -27,10 +27,13 @@ constexpr const char* fxDlyFb    = "fxDlyFb";
 constexpr const char* fxDlyCut   = "fxDlyCut";
 constexpr const char* fxDlySync  = "fxDlySync";
 constexpr const char* fxDlyDiv   = "fxDlyDiv";
-constexpr const char* fxRevOn    = "fxRevOn";
-constexpr const char* fxRevSize  = "fxRevSize";
-constexpr const char* fxRevDamp  = "fxRevDamp";
-constexpr const char* fxRevWidth = "fxRevWidth";
+constexpr const char* fxRevOn       = "fxRevOn";
+constexpr const char* fxRevSize     = "fxRevSize";
+constexpr const char* fxRevDamp     = "fxRevDamp";
+constexpr const char* fxRevWidth    = "fxRevWidth";
+constexpr const char* fxRevPredelay = "fxRevPredelay";
+constexpr const char* fxRevSync     = "fxRevSync";
+constexpr const char* fxRevDiv      = "fxRevDiv";
 
 inline constexpr int eqBandCount = 5;
 inline constexpr const char* postEqOn = "postEqOn";

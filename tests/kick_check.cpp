@@ -41,6 +41,7 @@ int main()
     const float q = k1x::lengthSeconds (1, 120.f);
     assert (std::abs (q - 0.5f) < 1e-4f);
     assert (k1x::lengthSeconds (0, 120.f) == 0.f);
+    assert (std::abs (k1x::beatsToSeconds (0.25f, 120.f) - 0.125f) < 1e-4f); // 1/16
 
     assert (std::abs (k1x::midiNoteToHz (69) - 440.f) < 1e-3f);
     assert (std::abs (k1x::midiNoteToHz (57) - 220.f) < 1e-3f); // A3

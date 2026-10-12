@@ -103,6 +103,22 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout
     addUnit (ParamID::fxRevSize, "Reverb Size", 0.45f);
     addUnit (ParamID::fxRevDamp, "Reverb Damp", 0.4f);
     addUnit (ParamID::fxRevWidth, "Reverb Width", 0.8f);
+    auto preR = NormalisableRange<float> (0.f, 200.f, 0.1f);
+    layout.add (std::make_unique<AudioParameterFloat> (
+        ParameterID { ParamID::fxRevPredelay, 1 }, "Reverb Predelay", preR, 0.f,
+        AudioParameterFloatAttributes()
+            .withStringFromValueFunction ([] (float v, int)
+            {
+                return String (roundToInt (v)) + " ms";
+            })
+            .withValueFromStringFunction ([preR] (const String& t)
+            {
+                return jlimit (preR.start, preR.end, t.getFloatValue());
+            })));
+    addOn (ParamID::fxRevSync, "Reverb Sync");
+    layout.add (std::make_unique<AudioParameterChoice> (
+        ParameterID { ParamID::fxRevDiv, 1 }, "Reverb Div",
+        StringArray { "1/64", "1/32", "1/16", "1/8" }, 1));
 
     const float eqHzDef[ParamID::eqBandCount] = { 80.f, 250.f, 1000.f, 4000.f, 10000.f };
     auto eqHz = NormalisableRange<float> (20.f, 20000.f, 0.01f, 0.3f);
