@@ -4,7 +4,7 @@ VST3 plugin build on JUCE (location C:\Users\Mikael\JUCE).
 Has both VST3 version and Standalone version.
 Uses Just, Justfile for building.
 Required target "build-dist" which creates a dist directory and zip files with the releases.
-Version is picked up from Git tag.
+Version is the jucer `version=`.
 `TEW03` is a sister plugin, use as inspiration and reference: C:\Users\Mikael\src\TEW03
 
 ## K1X what it is:

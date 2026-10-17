@@ -35,10 +35,13 @@ build-release: resave
 build-dist: build-release
     if (Test-Path dist) { Remove-Item dist -Recurse -Force }
     New-Item dist -ItemType Directory | Out-Null
-    Copy-Item -Recurse 'Builds\VisualStudio2022\x64\Release\VST3\K1X.vst3' dist
-    New-Item dist\Standalone -ItemType Directory | Out-Null
-    Copy-Item 'Builds\VisualStudio2022\x64\Release\Standalone Plugin\K1X.exe' dist\Standalone
-    $ver = (git describe --tags --abbrev=0 2>$null); if (-not $ver) { $ver = ([xml](Get-Content '{{PROJECT}}')).JUCERPROJECT.version }; Compress-Archive -Path dist\K1X.vst3, dist\Standalone -DestinationPath "dist\K1X-$ver-win-x64.zip" -Force
+    $ver = ([xml](Get-Content '{{PROJECT}}')).JUCERPROJECT.version; Compress-Archive -Path 'Builds\VisualStudio2022\x64\Release\VST3\K1X.vst3' -DestinationPath "dist\K1X-$ver-win-x64-vst3.zip" -Force; Compress-Archive -Path 'Builds\VisualStudio2022\x64\Release\Standalone Plugin\K1X.exe' -DestinationPath "dist\K1X-$ver-win-x64-standalone.zip" -Force
+    just build-msi
+
+# Release binaries must already exist. First build downloads WiX.
+# `dotnet` on PATH when it has an SDK, otherwise %USERPROFILE%\.dotnet.
+build-msi:
+    $ver = ([xml](Get-Content '{{PROJECT}}')).JUCERPROJECT.version; $root = (Get-Location).Path; $dotnet = 'dotnet'; if (-not ((& dotnet --list-sdks) 2>$null)) { $dotnet = Join-Path $env:USERPROFILE '.dotnet\dotnet.exe'; if (-not (Test-Path $dotnet)) { throw 'build-msi needs the .NET 8 SDK on PATH, or dotnet.exe in %USERPROFILE%\.dotnet' } }; New-Item -ItemType Directory -Force -Path dist | Out-Null; & $dotnet build installer\K1X.wixproj -c Release -p:ProductVersion=$ver -p:Vst3Dir="$root\Builds\VisualStudio2022\x64\Release\VST3\K1X.vst3" -p:StandaloneDir="$root\Builds\VisualStudio2022\x64\Release\Standalone Plugin" -p:IconDir="$root\Builds\VisualStudio2022"; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }; $msi = Get-ChildItem installer\bin -Recurse -Filter K1X.msi | Select-Object -First 1; Copy-Item $msi.FullName "dist\K1X-$ver-win-x64.msi" -Force
 
 clean:
     & '{{MSBUILD}}' {{SOLUTION}} /t:Clean /p:Configuration=Debug /p:Platform=x64

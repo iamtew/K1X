@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- UpgradeCode stays fixed so a newer MSI replaces this install. -->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+  <Package Name="K1X"
+           Manufacturer="Stupid Systems LLC"
+           Version="$(var.ProductVersion)"
+           UpgradeCode="B7E2C4A1-3D58-4F90-A6C2-91E4D8F0A5B3"
+           Scope="perMachine">
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of K1X is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <WixVariable Id="WixUILicenseRtf" Value="License.rtf" />
+
+    <Icon Id="K1xIcon" SourceFile="!(bindpath.Icon)icon.ico" />
+    <Property Id="ARPPRODUCTICON" Value="K1xIcon" />
+
+    <!-- Feature tree: both on by default, either can be cleared, Browse changes that feature's folder. -->
+    <ui:WixUI Id="WixUI_FeatureTree" />
+
+    <StandardDirectory Id="ProgramFiles6432Folder">
+      <Directory Id="CompanyFolder" Name="Stupid Systems LLC">
+        <Directory Id="INSTALLFOLDER" Name="K1X">
+          <Component Id="Standalone" Guid="*">
+            <File Id="StandaloneExe" Name="K1X.exe" Source="!(bindpath.Standalone)K1X.exe" KeyPath="yes" />
+          </Component>
+        </Directory>
+      </Directory>
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="ProgramMenuDir" Name="K1X">
+        <!-- HKCU keypath is what MSI requires for a Start menu shortcut. -->
+        <Component Id="StartMenuShortcut" Guid="*">
+          <Shortcut Id="StartMenu"
+                    Directory="ProgramMenuDir"
+                    Name="K1X"
+                    WorkingDirectory="INSTALLFOLDER"
+                    Icon="K1xIcon"
+                    Target="[INSTALLFOLDER]K1X.exe" />
+          <RemoveFolder Id="RemoveProgramMenuDir" On="uninstall" />
+          <RegistryValue Root="HKCU"
+                         Key="Software\Stupid Systems LLC\K1X"
+                         Name="installed"
+                         Type="integer"
+                         Value="1"
+                         KeyPath="yes" />
+        </Component>
+      </Directory>
+    </StandardDirectory>
+
+    <StandardDirectory Id="CommonFiles6432Folder">
+      <Directory Id="VST3DIR" Name="VST3">
+        <Directory Id="Vst3Bundle" Name="K1X.vst3" />
+      </Directory>
+    </StandardDirectory>
+
+    <ComponentGroup Id="Vst3Files" Directory="Vst3Bundle">
+      <Files Include="!(bindpath.Vst3)**" />
+    </ComponentGroup>
+
+    <Feature Id="Vst3Feature" Title="VST3" Level="1" ConfigurableDirectory="VST3DIR"
+             Description="VST3 plugin. Default folder is Common Files\VST3.">
+      <ComponentGroupRef Id="Vst3Files" />
+    </Feature>
+
+    <Feature Id="StandaloneFeature" Title="Standalone" Level="1" ConfigurableDirectory="INSTALLFOLDER"
+             Description="Standalone app and Start menu shortcut. Default folder is Program Files\Stupid Systems LLC\K1X.">
+      <ComponentRef Id="Standalone" />
+      <ComponentRef Id="StartMenuShortcut" />
+    </Feature>
+  </Package>
+</Wix>
