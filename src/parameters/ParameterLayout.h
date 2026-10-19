@@ -123,7 +123,7 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout
     const float eqHzDef[ParamID::eqBandCount] = { 80.f, 250.f, 1000.f, 4000.f, 10000.f };
     auto eqHz = NormalisableRange<float> (20.f, 20000.f, 0.01f, 0.3f);
     auto eqQ = NormalisableRange<float> (0.1f, 10.f, 0.01f, 0.4f);
-    auto eqGain = NormalisableRange<float> (-12.f, 12.f);
+    auto eqGain = NormalisableRange<float> (-12.f, 12.f, 0.01f);
     auto eqTypes = StringArray { "Off", "Peak", "Low S", "High S", "HP", "LP" };
     addOn (ParamID::postEqOn, "Post EQ On");
     for (int b = 0; b < ParamID::eqBandCount; ++b)

@@ -208,6 +208,7 @@ private:
     juce::Image logo;
     bool waveDirty = true;
     bool standalone = false;
+    juce::TooltipWindow tip { this };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (K1XAudioProcessorEditor)
 };
