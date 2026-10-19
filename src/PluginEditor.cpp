@@ -294,9 +294,9 @@ void K1XAudioProcessorEditor::PanelLnF::drawRotarySlider (juce::Graphics& g, int
 
     const float angle = startAngle + pos * (endAngle - startAngle);
     const auto c = cap.getCentre();
-    const auto tip = c.getPointOnCircumference (cap.getWidth() * 0.42f, angle);
+    const auto needle = c.getPointOnCircumference (cap.getWidth() * 0.42f, angle);
     g.setColour (kDark);
-    g.drawLine (c.x, c.y, tip.x, tip.y, 2.2f);
+    g.drawLine (c.x, c.y, needle.x, needle.y, 2.2f);
     g.fillEllipse (c.x - 2.5f, c.y - 2.5f, 5.f, 5.f);
 }
 
