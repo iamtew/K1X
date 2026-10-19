@@ -17,9 +17,22 @@ public:
 
     void paint (juce::Graphics&) override;
     void resized() override;
-    void mouseUp (const juce::MouseEvent&) override;
 
 private:
+    // Everything lives in `content`, laid out at a fixed base size and scaled as
+    // one picture. Dragging the corner changes only the scale, so nothing reflows.
+    struct Content : public juce::Component
+    {
+        explicit Content (K1XAudioProcessorEditor& e) : ed (e) {}
+        void paint (juce::Graphics& g) override { ed.paintContent (g); }
+        void resized() override { ed.layoutContent(); }
+        void mouseUp (const juce::MouseEvent& e) override { ed.contentMouseUp (e); }
+        K1XAudioProcessorEditor& ed;
+    };
+    void paintContent (juce::Graphics&);
+    void layoutContent();
+    void contentMouseUp (const juce::MouseEvent&);
+
     void timerCallback() override;
     void parameterChanged (const juce::String&, float) override;
     void rebuildWave();
@@ -145,6 +158,8 @@ private:
     };
 
     PanelLnF panelLnF;
+    Content content { *this };  // declared before its children so it is destroyed after them
+    int baseW = 0, baseH = 0;   // unscaled size
     WaveView wave;
     juce::OwnedArray<Knob> knobs;
     juce::Label styleLabel;

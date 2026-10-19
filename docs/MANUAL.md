@@ -38,3 +38,5 @@ Five-band parametric under the FX row. Spectrum is the live output after FX and 
 Click **K1X** + version in the top left for About and a GitHub update check.
 
 Standalone: **Play** previews. **Export WAV** writes one shot plus FX tail (44.1 kHz, 16-bit, stereo). Waveform preview stays the dry kick.
+
+Drag the window corner to scale (40%–150%); the scale is saved with the session.

@@ -557,7 +557,7 @@ K1XAudioProcessorEditor::K1XAudioProcessorEditor (K1XAudioProcessor& p)
 
     logo = juce::ImageCache::getFromMemory (BinaryData::logo_png, BinaryData::logo_pngSize);
 
-    addAndMakeVisible (wave);
+    content.addAndMakeVisible (wave);
 
     struct Spec { const char* id; const char* name; };
     static constexpr Spec kKnobs[] = {
@@ -569,7 +569,7 @@ K1XAudioProcessorEditor::K1XAudioProcessorEditor (K1XAudioProcessor& p)
     for (auto& s : kKnobs)
     {
         auto* k = knobs.add (new Knob (proc.apvts, s.id, s.name));
-        addAndMakeVisible (k);
+        content.addAndMakeVisible (k);
     }
 
     auto setupCombo = [this] (juce::Label& label, juce::ComboBox& box, const juce::String& name)
@@ -577,10 +577,10 @@ K1XAudioProcessorEditor::K1XAudioProcessorEditor (K1XAudioProcessor& p)
         label.setText (name, juce::dontSendNotification);
         label.setJustificationType (juce::Justification::centred);
         label.setColour (juce::Label::textColourId, kMetal);
-        addAndMakeVisible (label);
+        content.addAndMakeVisible (label);
         box.setColour (juce::ComboBox::textColourId, kMetal);
         box.setColour (juce::ComboBox::arrowColourId, kMetal);
-        addAndMakeVisible (box);
+        content.addAndMakeVisible (box);
     };
     setupCombo (styleLabel, styleBox, "Style");
     styleBox.addItem ("909", 1);
@@ -601,28 +601,28 @@ K1XAudioProcessorEditor::K1XAudioProcessorEditor (K1XAudioProcessor& p)
 
     patchBar.onStep = [this] (int d) { cyclePatch (d); };
     patchBar.onOpen = [this] { openPatchMenu(); };
-    addAndMakeVisible (patchBar);
+    content.addAndMakeVisible (patchBar);
     refreshPatchName();
     pageBar.setText (kPageNames[0]);
     pageBar.onStep = [this] (int d) { cyclePage (d); };
     pageBar.onOpen = [this] { openPageMenu(); };
-    addAndMakeVisible (pageBar);
-    addAndMakeVisible (volumeStrip);
+    content.addAndMakeVisible (pageBar);
+    content.addAndMakeVisible (volumeStrip);
 
     standalone = juce::PluginHostType::getPluginLoadedAs() == juce::AudioProcessor::wrapperType_Standalone;
     playBtn.setClickingTogglesState (false);
     playBtn.onClick = [this] { proc.requestTrigger(); };
     exportBtn.setClickingTogglesState (false);
     exportBtn.onClick = [this] { exportWav(); };
-    addAndMakeVisible (playBtn);
-    addAndMakeVisible (exportBtn);
+    content.addAndMakeVisible (playBtn);
+    content.addAndMakeVisible (exportBtn);
     playBtn.setVisible (standalone);
     exportBtn.setVisible (standalone);
 
-    addAndMakeVisible (fxPage);
+    content.addAndMakeVisible (fxPage);
     fxPage.setVisible (false);
 
-    addChildComponent (aboutBox);
+    content.addChildComponent (aboutBox);
     aboutBox.setVisible (false);
 
     for (auto* id : { ParamID::tune, ParamID::pitchDrop, ParamID::pitchDecay, ParamID::click,
@@ -630,7 +630,18 @@ K1XAudioProcessorEditor::K1XAudioProcessorEditor (K1XAudioProcessor& p)
                       ParamID::lo, ParamID::hi, ParamID::level, ParamID::length, ParamID::style })
         proc.apvts.addParameterListener (id, this);
 
-    setSize (kEditorW, kEditorH);
+    baseW = kEditorW;
+    baseH = kEditorH;
+    content.setSize (baseW, baseH);
+    addAndMakeVisible (content);
+
+    // Drag the corner to scale (40%..150%), aspect ratio locked. The scale is saved with the session.
+    // Read it first: setResizeLimits clamps the still-empty editor and resized() overwrites uiScale.
+    const float s = juce::jlimit (0.4f, 1.5f, proc.uiScale);
+    setResizable (true, true);
+    setResizeLimits (baseW * 2 / 5, baseH * 2 / 5, baseW * 3 / 2, baseH * 3 / 2);
+    getConstrainer()->setFixedAspectRatio ((double) baseW / (double) baseH);
+    setSize (juce::roundToInt ((float) baseW * s), juce::roundToInt ((float) baseH * s));
     startTimerHz (15);
 }
 
@@ -680,9 +691,23 @@ void K1XAudioProcessorEditor::rebuildWave()
 
 void K1XAudioProcessorEditor::paint (juce::Graphics& g)
 {
+    g.fillAll (kChassis);  // covers the sub-pixel edge the scaled content may leave
+}
+
+void K1XAudioProcessorEditor::resized()
+{
+    if (baseW == 0)
+        return;  // called before the constructor finished
+    const float s = (float) getWidth() / (float) baseW;
+    content.setTransform (juce::AffineTransform::scale (s));
+    proc.uiScale = s;
+}
+
+void K1XAudioProcessorEditor::paintContent (juce::Graphics& g)
+{
     g.fillAll (kChassis);
 
-    auto r = getLocalBounds().reduced (kPad);
+    auto r = content.getLocalBounds().reduced (kPad);
     auto title = r.removeFromTop (kTitleH);
     if (logo.isValid())
     {
@@ -698,12 +723,12 @@ void K1XAudioProcessorEditor::paint (juce::Graphics& g)
     g.drawText ("v" JucePlugin_VersionString, nameCol, juce::Justification::centredLeft, false);
 
     g.setColour (kChassis.brighter (0.08f));
-    g.drawRoundedRectangle (getLocalBounds().toFloat().reduced (1.5f), 2.f, 2.f);
+    g.drawRoundedRectangle (content.getLocalBounds().toFloat().reduced (1.5f), 2.f, 2.f);
 }
 
-void K1XAudioProcessorEditor::resized()
+void K1XAudioProcessorEditor::layoutContent()
 {
-    auto r = getLocalBounds().reduced (kPad);
+    auto r = content.getLocalBounds().reduced (kPad);
     auto title = r.removeFromTop (kTitleH);
     title.removeFromLeft (kTitleHitW);
     volumeStrip.setBounds (title.removeFromRight (240).reduced (2, 4));
@@ -735,7 +760,7 @@ void K1XAudioProcessorEditor::resized()
                              r.getY() + (i / cols) * cellH,
                              cellW, cellH);
 
-    aboutBox.setBounds (getLocalBounds());
+    aboutBox.setBounds (content.getLocalBounds());
     applyPageVisibility();
 }
 
@@ -781,7 +806,7 @@ void K1XAudioProcessorEditor::applyPageVisibility()
     fxPage.setVisible (! main);
 }
 
-void K1XAudioProcessorEditor::mouseUp (const juce::MouseEvent& e)
+void K1XAudioProcessorEditor::contentMouseUp (const juce::MouseEvent& e)
 {
     if (e.mouseWasClicked() && titleHitBounds().contains (e.getPosition()))
         openAbout();

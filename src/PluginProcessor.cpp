@@ -275,14 +275,21 @@ bool K1XAudioProcessor::importPatch (const juce::File& src)
 void K1XAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
     if (auto xml = apvts.copyState().createXml())
+    {
+        xml->setAttribute ("uiScale", uiScale);
         copyXmlToBinary (*xml, destData);
+    }
 }
 
 void K1XAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
     if (auto xml = getXmlFromBinary (data, sizeInBytes))
         if (xml->hasTagName (apvts.state.getType()))
+        {
+            uiScale = juce::jlimit (0.4f, 1.5f, (float) xml->getDoubleAttribute ("uiScale", uiScale));  // sessions only, patches keep your size
+            xml->removeAttribute ("uiScale");  // don't leak into patch saves
             apvts.replaceState (juce::ValueTree::fromXml (*xml));
+        }
 }
 
 juce::AudioProcessorEditor* K1XAudioProcessor::createEditor()

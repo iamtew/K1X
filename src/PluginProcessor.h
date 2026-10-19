@@ -59,6 +59,9 @@ public:
     bool exportPatch (const juce::File& dest);
     bool importPatch (const juce::File& src);
 
+    // Editor scale (drag the corner). Saved with the session, not with patches.
+    float uiScale = 0.85f;
+
 private:
     float raw (const char* id) const;
     int lengthChoice() const;
