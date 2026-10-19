@@ -60,7 +60,94 @@ void K1XAudioProcessorEditor::Knob::resized()
     slider.setBounds (r);
 }
 
-K1XAudioProcessorEditor::FxPage::FxPage (K1XAudioProcessor& p) : proc (p), eq (p)
+K1XAudioProcessorEditor::MixStrip::MixStrip (juce::AudioProcessorValueTreeState& st, const char* id,
+                                             const char* name, k1x::OutputMeter& m)
+    : meter (m)
+{
+    label.setText (name, juce::dontSendNotification);
+    label.setJustificationType (juce::Justification::centred);
+    label.setColour (juce::Label::textColourId, kMetal);
+    label.setColour (juce::Label::backgroundColourId, juce::Colours::transparentBlack);
+    addAndMakeVisible (label);
+
+    slider.setLookAndFeel (&lnf);
+    slider.setSliderStyle (juce::Slider::LinearVertical);
+    slider.setTextBoxStyle (juce::Slider::TextBoxBelow, false, 40, 12);
+    slider.setOpaque (false);
+    slider.setColour (juce::Slider::backgroundColourId, juce::Colours::transparentBlack);
+    slider.setColour (juce::Slider::trackColourId, juce::Colours::transparentBlack);
+    slider.setColour (juce::Slider::thumbColourId, kMetal);
+    slider.setColour (juce::Slider::textBoxTextColourId, kMetal);
+    slider.setColour (juce::Slider::textBoxBackgroundColourId, juce::Colours::transparentBlack);
+    slider.setColour (juce::Slider::textBoxOutlineColourId, juce::Colours::transparentBlack);
+    if (auto* p = dynamic_cast<juce::RangedAudioParameter*> (st.getParameter (id)))
+        slider.setDoubleClickReturnValue (true, p->convertFrom0to1 (p->getDefaultValue()));
+    att = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (st, id, slider);
+    addAndMakeVisible (slider);
+}
+
+K1XAudioProcessorEditor::MixStrip::~MixStrip()
+{
+    slider.setLookAndFeel (nullptr);
+}
+
+juce::Rectangle<float> K1XAudioProcessorEditor::MixStrip::trackArea() const
+{
+    auto r = slider.getBounds().toFloat();
+    r.removeFromBottom (12.f); // percent box
+    return r.reduced (10.f, 4.f);
+}
+
+void K1XAudioProcessorEditor::MixStrip::resized()
+{
+    auto r = getLocalBounds();
+    label.setBounds (r.removeFromTop (kLabelH));
+    slider.setBounds (r);
+}
+
+void K1XAudioProcessorEditor::MixStrip::LnF::drawLinearSlider (juce::Graphics& g, int x, int, int w, int,
+                                                              float pos, float, float,
+                                                              juce::Slider::SliderStyle, juce::Slider&)
+{
+    // Cap only — meter fill is MixStrip::paint.
+    const float cx = (float) x + (float) w * 0.5f;
+    juce::Rectangle<float> cap (cx - 12.f, pos - 4.f, 24.f, 8.f);
+    g.setColour (kDark);
+    g.fillRoundedRectangle (cap, 2.f);
+    g.setColour (kMetal);
+    g.drawRoundedRectangle (cap, 2.f, 1.f);
+}
+
+void K1XAudioProcessorEditor::MixStrip::paint (juce::Graphics& g)
+{
+    auto track = trackArea();
+    g.setColour (kDark);
+    g.fillRoundedRectangle (track, 3.f);
+
+    const float peak = meter.lastPeak();
+    const float db = peak > 1.0e-6f ? 20.f * std::log10 (peak) : -90.f;
+    const float y01 = juce::jlimit (0.f, 1.f, (db + 48.f) / 48.f);
+    if (y01 > 0.f)
+    {
+        auto fill = track.removeFromBottom (track.getHeight() * y01);
+        g.setColour (clipped ? kOrange : kChassis.brighter (0.15f));
+        g.fillRoundedRectangle (fill, 3.f);
+    }
+}
+
+void K1XAudioProcessorEditor::MixStrip::refresh()
+{
+    if (meter.takeClip())
+        clipUntil = juce::Time::getMillisecondCounter() + 800;
+    clipped = juce::Time::getMillisecondCounter() < clipUntil;
+    repaint();
+}
+
+K1XAudioProcessorEditor::FxPage::FxPage (K1XAudioProcessor& p)
+    : proc (p),
+      dryStrip (p.apvts, ParamID::fxDry, "Dry", p.dryMeter()),
+      fxStrip (p.apvts, ParamID::fxWet, "FX", p.fxMeter()),
+      eq (p)
 {
     auto setupOn = [this, &p] (juce::ToggleButton& b, const char* id,
                                std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment>& att)
@@ -76,7 +163,6 @@ K1XAudioProcessorEditor::FxPage::FxPage (K1XAudioProcessor& p) : proc (p), eq (p
 
     struct Spec { const char* id; const char* name; };
     static constexpr Spec kFxKnobs[] = {
-        { ParamID::fxDry, "Dry" }, { ParamID::fxWet, "FX" },
         { ParamID::fxDstDrive, "Drive" },
         { ParamID::fxDlyTime, "Time" }, { ParamID::fxDlyFb, "Fb" }, { ParamID::fxDlyCut, "Cut" },
         { ParamID::fxRevPredelay, "Pre" }, { ParamID::fxRevSize, "Size" },
@@ -87,6 +173,8 @@ K1XAudioProcessorEditor::FxPage::FxPage (K1XAudioProcessor& p) : proc (p), eq (p
         auto* k = knobs.add (new Knob (p.apvts, s.id, s.name));
         addAndMakeVisible (k);
     }
+    addAndMakeVisible (dryStrip);
+    addAndMakeVisible (fxStrip);
 
     dlyDivLabel.setText ("Div", juce::dontSendNotification);
     dlyDivLabel.setJustificationType (juce::Justification::centred);
@@ -125,13 +213,19 @@ void K1XAudioProcessorEditor::FxPage::parameterChanged (const juce::String& id, 
 
 void K1XAudioProcessorEditor::FxPage::bindPreKnob()
 {
-    if (knobs.size() < 7)
+    if (knobs.size() < 5)
         return;
-    auto* k = knobs[6];
+    auto* k = knobs[4];
     k->att.reset();
     const bool sync = proc.apvts.getRawParameterValue (ParamID::fxRevSync)->load() >= 0.5f;
     k->att = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (
         proc.apvts, sync ? ParamID::fxRevDiv : ParamID::fxRevPredelay, k->slider);
+}
+
+void K1XAudioProcessorEditor::FxPage::refreshMix()
+{
+    dryStrip.refresh();
+    fxStrip.refresh();
 }
 
 void K1XAudioProcessorEditor::FxPage::resized()
@@ -141,17 +235,15 @@ void K1XAudioProcessorEditor::FxPage::resized()
     r.removeFromTop (12); // gap between FX knobs and EQ
     eq.setBounds (r);
 
-    auto mix = fx.removeFromLeft (110);
-    if (knobs.size() >= 2)
-    {
-        knobs[0]->setBounds (mix.removeFromLeft (55));
-        knobs[1]->setBounds (mix);
-    }
-    fx.removeFromLeft (4);
+    auto mix = fx.removeFromLeft (92);
+    dryStrip.setBounds (mix.removeFromLeft (44));
+    mix.removeFromLeft (4);
+    fxStrip.setBounds (mix);
+
     auto dist = fx.removeFromLeft (90);
     dstOn.setBounds (dist.removeFromTop (22).reduced (4, 1));
-    if (knobs.size() >= 3)
-        knobs[2]->setBounds (dist);
+    if (knobs.size() >= 1)
+        knobs[0]->setBounds (dist);
 
     fx.removeFromLeft (4);
     auto delay = fx.removeFromLeft (220);
@@ -161,11 +253,11 @@ void K1XAudioProcessorEditor::FxPage::resized()
     dlyDivLabel.setBounds (delayTop.removeFromLeft (28));
     dlyDiv.setBounds (delayTop.removeFromLeft (64).reduced (0, 1));
     const int dlyW = delay.getWidth() / 3;
-    if (knobs.size() >= 6)
+    if (knobs.size() >= 4)
     {
-        knobs[3]->setBounds (delay.removeFromLeft (dlyW));
-        knobs[4]->setBounds (delay.removeFromLeft (dlyW));
-        knobs[5]->setBounds (delay);
+        knobs[1]->setBounds (delay.removeFromLeft (dlyW));
+        knobs[2]->setBounds (delay.removeFromLeft (dlyW));
+        knobs[3]->setBounds (delay);
     }
 
     fx.removeFromLeft (4);
@@ -173,12 +265,12 @@ void K1XAudioProcessorEditor::FxPage::resized()
     revOn.setBounds (revTop.removeFromLeft (48).reduced (2, 1));
     revSync.setBounds (revTop.removeFromLeft (48).reduced (2, 1));
     const int revW = juce::jmax (1, fx.getWidth() / 4);
-    if (knobs.size() >= 10)
+    if (knobs.size() >= 8)
     {
+        knobs[4]->setBounds (fx.removeFromLeft (revW));
+        knobs[5]->setBounds (fx.removeFromLeft (revW));
         knobs[6]->setBounds (fx.removeFromLeft (revW));
-        knobs[7]->setBounds (fx.removeFromLeft (revW));
-        knobs[8]->setBounds (fx.removeFromLeft (revW));
-        knobs[9]->setBounds (fx);
+        knobs[7]->setBounds (fx);
     }
 }
 
@@ -666,6 +758,8 @@ void K1XAudioProcessorEditor::timerCallback()
         rebuildWave();
     refreshPatchName();
     volumeStrip.refresh();
+    if (fxPage.isVisible())
+        fxPage.refreshMix();
 }
 
 void K1XAudioProcessorEditor::rebuildWave()

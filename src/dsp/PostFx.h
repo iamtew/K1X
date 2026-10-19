@@ -2,6 +2,7 @@
 
 #include "../parameters/ParameterIDs.h"
 #include "KickRender.h"
+#include "OutputScope.h"
 
 #include <JuceHeader.h>
 #include <cmath>
@@ -53,14 +54,25 @@ struct PostFx
 
         const float dryG = p (apvts, ParamID::fxDry);
         const float fxG = p (apvts, ParamID::fxWet);
+        float dryP = 0.f, fxP = 0.f;
         for (int ch = 0; ch < chs; ++ch)
         {
             auto* dry = buffer.getWritePointer (ch);
             const auto* w = wet.getReadPointer (ch);
             for (int i = 0; i < n; ++i)
-                dry[i] = dry[i] * dryG + w[i] * fxG;
+            {
+                const float d = dry[i] * dryG;
+                const float f = w[i] * fxG;
+                dry[i] = d + f;
+                dryP = juce::jmax (dryP, std::abs (d));
+                fxP = juce::jmax (fxP, std::abs (f));
+            }
         }
+        dryMeter.setPeak (dryP);
+        fxMeter.setPeak (fxP);
     }
+
+    OutputMeter dryMeter, fxMeter;
 
 private:
     float p (juce::AudioProcessorValueTreeState& apvts, const char* id) const

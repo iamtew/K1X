@@ -122,8 +122,16 @@ struct OutputMeter
             if (a >= 1.f)
                 clip = true;
         }
-        peak.store (p, std::memory_order_relaxed);
+        setPeak (p);
         if (clip)
+            clipArmed.store (true, std::memory_order_relaxed);
+    }
+
+    // Peak from a mix loop that already scanned samples — no extra buffer.
+    void setPeak (float p)
+    {
+        peak.store (p, std::memory_order_relaxed);
+        if (p >= 1.f)
             clipArmed.store (true, std::memory_order_relaxed);
     }
 

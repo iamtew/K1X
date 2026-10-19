@@ -48,6 +48,8 @@ public:
     void renderWithPost (juce::AudioBuffer<float>& dest, double sampleRate);
     k1x::EqAnalyser& eqAnalyser() { return analyser; }
     k1x::OutputMeter& outputMeter() { return meter; }
+    k1x::OutputMeter& dryMeter() { return postFx.dryMeter; }
+    k1x::OutputMeter& fxMeter() { return postFx.fxMeter; }
 
     juce::File patchesDir() const;
     juce::StringArray patchNames() const;

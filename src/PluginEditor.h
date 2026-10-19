@@ -123,6 +123,32 @@ private:
         juce::uint32 clipUntil = 0;
     };
 
+    // Vertical Dry/FX strip: fader cap is the param, fill is post-fader peak.
+    struct MixStrip : public juce::Component
+    {
+        MixStrip (juce::AudioProcessorValueTreeState& st, const char* id, const char* name,
+                  k1x::OutputMeter& meter);
+        ~MixStrip() override;
+        void resized() override;
+        void paint (juce::Graphics& g) override;
+        void refresh();
+        juce::Rectangle<float> trackArea() const;
+
+        struct LnF : public juce::LookAndFeel_V4
+        {
+            void drawLinearSlider (juce::Graphics&, int, int, int, int, float pos,
+                                   float, float, juce::Slider::SliderStyle, juce::Slider&) override;
+        };
+
+        k1x::OutputMeter& meter;
+        LnF lnf;
+        juce::Label label;
+        juce::Slider slider;
+        std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> att;
+        bool clipped = false;
+        juce::uint32 clipUntil = 0;
+    };
+
     struct Knob : public juce::Component
     {
         Knob (juce::AudioProcessorValueTreeState& st, const juce::String& id, const juce::String& name);
@@ -142,8 +168,10 @@ private:
         void resized() override;
         void parameterChanged (const juce::String&, float) override;
         void bindPreKnob();
+        void refreshMix();
 
         K1XAudioProcessor& proc;
+        MixStrip dryStrip, fxStrip;
         juce::OwnedArray<Knob> knobs;
         juce::ToggleButton dstOn { "Dist" };
         juce::ToggleButton dlyOn { "Delay" };
