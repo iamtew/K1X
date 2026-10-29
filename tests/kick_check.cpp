@@ -1,5 +1,6 @@
 #include "dsp/EqBiquad.h"
 #include "dsp/KickRender.h"
+#include "presets/FactoryPresets.h"
 #include "ui/VersionCompare.h"
 
 #include <cassert>
@@ -78,6 +79,9 @@ int main()
         const float db6 = 20.f * std::log10 (mag6);
         assert (std::abs (db6 - 6.f) < 0.25f);
     }
+
+    assert (k1x::factoryPresetCount >= 60);
+    assert (k1x::factoryBankOk());
 
     std::vector<std::string> tags { "0.0.2", "v0.0.1" };
     assert (k1x::newestNewerTag (tags, "0.0.1") == "0.0.2");

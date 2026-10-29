@@ -29,6 +29,10 @@
         <FILE id="plyH001" name="ParameterLayout.h" compile="0" resource="0"
               file="src/parameters/ParameterLayout.h"/>
       </GROUP>
+      <GROUP id="preGrp01" name="presets">
+        <FILE id="fpH0001" name="FactoryPresets.h" compile="0" resource="0"
+              file="src/presets/FactoryPresets.h"/>
+      </GROUP>
       <GROUP id="uiGrp01" name="ui">
         <FILE id="verH001" name="VersionCompare.h" compile="0" resource="0"
               file="src/ui/VersionCompare.h"/>
