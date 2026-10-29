@@ -546,7 +546,7 @@ void K1XAudioProcessorEditor::PatchBar::paint (juce::Graphics& g)
     g.fillPath (chev (left, true));
     g.fillPath (chev (right, false));
     g.setFont (boldFont (12.f));
-    g.drawText (text, r.toNearestInt(), juce::Justification::centred, false);
+    g.drawText (text, r.toNearestInt(), juce::Justification::centred, true);
 }
 
 void K1XAudioProcessorEditor::PatchBar::mouseUp (const juce::MouseEvent& e)
@@ -941,7 +941,11 @@ void K1XAudioProcessorEditor::contentMouseUp (const juce::MouseEvent& e)
 
 void K1XAudioProcessorEditor::refreshPatchName()
 {
-    patchBar.setText (proc.patchName());
+    const auto name = proc.patchName();
+    if (const auto* preset = k1x::findFactoryPreset (name.toRawUTF8()))
+        patchBar.setText (juce::String (preset->category) + " / " + name);
+    else
+        patchBar.setText (name);
 }
 
 void K1XAudioProcessorEditor::cyclePatch (int delta)
