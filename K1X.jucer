@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<JUCERPROJECT name="K1X" companyName="Stupid Systems LLC" version="0.0.4" userNotes="909-style kick drum."
+<JUCERPROJECT name="K1X" companyName="Stupid Systems LLC" version="0.0.5" userNotes="909-style kick drum."
               projectType="audioplug" pluginAUIsSandboxSafe="1" pluginManufacturer="Stupid Systems LLC"
               pluginManufacturerCode="Ssys" pluginCode="K1x1" cppLanguageStandard="17"
               pluginFormats="buildVST3,buildStandalone" pluginCharacteristicsValue="pluginIsSynth,pluginWantsMidiIn"
