@@ -16,10 +16,10 @@ A 909-inspired kick (plus 808 / 707 / Tight / Hard) you can tune and process, wi
 - VST3 + Standalone
 - Standalone Play + WAV export
 - About + GitHub tag check
+- Factory preset bank (12 categories)
 - Steel-blue UI, logo, MIT
 
 ## Non-goals
 
 - Circuit-level 909 clone
 - Reorderable FX rack
-- Preset library

@@ -33,7 +33,7 @@ Parallel send after the kick. **Dry** is the unprocessed kick; **FX** is Distort
 
 Five-band parametric under the FX row. Spectrum is the live output after FX and EQ. Drag a node for freq/gain, wheel for Q, double-click to reset a band. **EQ** (left of the rail header) bypasses the whole EQ. **Reset** (right half of that header) restores all bands and EQ on/off to defaults.
 
-**Init Patch** (title bar) — click for Init / Save / Save As / Export / Import, or the saved list. Chevrons step through patches. Files live in `%AppData%\Stupid Systems LLC\K1X\Patches` as `.k1xp`.
+**Init Patch** (title bar) — click for Init / Save / Save As / Export / Import, a factory category, or your saved list. Chevrons step the factory bank, then any extra patches. Your files live in `%AppData%\Stupid Systems LLC\K1X\Patches` as `.k1xp`. Saving a factory name stores your copy there; delete that file to hear the factory sound again.
 
 Click **K1X** + version in the top left for About and a GitHub update check.
 
