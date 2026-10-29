@@ -1,4 +1,5 @@
 #include "PluginEditor.h"
+#include "presets/FactoryPresets.h"
 #include "ui/VersionCompare.h"
 
 #include <cmath>
@@ -32,7 +33,8 @@ constexpr int kMenuSave = 2;
 constexpr int kMenuSaveAs = 3;
 constexpr int kMenuExport = 4;
 constexpr int kMenuImport = 5;
-constexpr int kMenuFiles = 100;
+constexpr int kMenuFactory = 1000;
+constexpr int kMenuUser = 10000;
 } // namespace
 
 K1XAudioProcessorEditor::Knob::Knob (juce::AudioProcessorValueTreeState& st,
@@ -929,7 +931,6 @@ void K1XAudioProcessorEditor::cyclePatch (int delta)
 void K1XAudioProcessorEditor::openPatchMenu()
 {
     juce::PopupMenu m;
-    const auto names = proc.patchNames();
     const auto cur = proc.patchName();
     m.addItem (kMenuInit, "Init Patch", true, cur == "Init Patch");
     m.addSeparator();
@@ -937,16 +938,40 @@ void K1XAudioProcessorEditor::openPatchMenu()
     m.addItem (kMenuSaveAs, "Save As...");
     m.addItem (kMenuExport, "Export...");
     m.addItem (kMenuImport, "Import...");
-    if (names.size() > 0)
+    m.addSeparator();
+
+    juce::String cat;
+    juce::PopupMenu sub;
+    for (int i = 0; i < k1x::factoryPresetCount; ++i)
+    {
+        const auto& preset = k1x::factoryPresets[i];
+        const juce::String next (preset.category);
+        if (next != cat)
+        {
+            if (sub.getNumItems() > 0)
+                m.addSubMenu (cat, sub);
+            sub = juce::PopupMenu();
+            cat = next;
+        }
+        sub.addItem (kMenuFactory + i, preset.name, true, cur == preset.name);
+    }
+    if (sub.getNumItems() > 0)
+        m.addSubMenu (cat, sub);
+
+    juce::StringArray userOnly;
+    for (const auto& name : proc.patchNames())
+        if (k1x::findFactoryPreset (name.toRawUTF8()) == nullptr)
+            userOnly.add (name);
+    if (userOnly.size() > 0)
     {
         m.addSeparator();
-        for (int i = 0; i < names.size(); ++i)
-            m.addItem (kMenuFiles + i, names[i], true, names[i] == cur);
+        for (int i = 0; i < userOnly.size(); ++i)
+            m.addItem (kMenuUser + i, userOnly[i], true, userOnly[i] == cur);
     }
 
     juce::Component::SafePointer<K1XAudioProcessorEditor> safe (this);
     m.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (patchBar),
-                     [safe, names] (int result)
+                     [safe, userOnly] (int result)
                      {
                          if (safe == nullptr || result <= 0)
                              return;
@@ -963,11 +988,17 @@ void K1XAudioProcessorEditor::openPatchMenu()
                              safe->chooseExport();
                          else if (result == kMenuImport)
                              safe->chooseImport();
-                         else if (result >= kMenuFiles)
+                         else if (result >= kMenuUser)
                          {
-                             const int i = result - kMenuFiles;
-                             if (juce::isPositiveAndBelow (i, names.size()))
-                                 safe->proc.loadPatchByName (names[i]);
+                             const int i = result - kMenuUser;
+                             if (juce::isPositiveAndBelow (i, userOnly.size()))
+                                 safe->proc.loadPatchByName (userOnly[i]);
+                         }
+                         else if (result >= kMenuFactory)
+                         {
+                             const int i = result - kMenuFactory;
+                             if (juce::isPositiveAndBelow (i, k1x::factoryPresetCount))
+                                 safe->proc.loadPatchByName (k1x::factoryPresets[i].name);
                          }
                          safe->refreshPatchName();
                      });

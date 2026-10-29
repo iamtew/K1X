@@ -1,5 +1,6 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include "presets/FactoryPresets.h"
 
 #include <cstring>
 #include <vector>
@@ -29,6 +30,77 @@ juce::String legalStem (const juce::String& name)
     if (stem.endsWithIgnoreCase (kPatchExt))
         stem = stem.dropLastCharacters ((int) std::strlen (kPatchExt));
     return stem;
+}
+
+void setParam (juce::AudioProcessorValueTreeState& apvts, const char* id, float value)
+{
+    if (auto* ranged = dynamic_cast<juce::RangedAudioParameter*> (apvts.getParameter (id)))
+    {
+        ranged->beginChangeGesture();
+        ranged->setValueNotifyingHost (ranged->convertTo0to1 (value));
+        ranged->endChangeGesture();
+    }
+}
+
+void applyFactory (K1XAudioProcessor& proc, const k1x::FactoryPreset& preset)
+{
+    proc.initPatch();
+    auto& apvts = proc.apvts;
+    setParam (apvts, ParamID::tune, preset.tune);
+    setParam (apvts, ParamID::pitchDrop, preset.drop);
+    setParam (apvts, ParamID::pitchDecay, preset.pDec);
+    setParam (apvts, ParamID::click, preset.click);
+    setParam (apvts, ParamID::punch, preset.punch);
+    setParam (apvts, ParamID::decay, preset.decay);
+    setParam (apvts, ParamID::drive, preset.drive);
+    setParam (apvts, ParamID::hpf, preset.hpf);
+    setParam (apvts, ParamID::tone, preset.tone);
+    setParam (apvts, ParamID::lo, preset.lo);
+    setParam (apvts, ParamID::hi, preset.hi);
+    setParam (apvts, ParamID::level, preset.level);
+    setParam (apvts, ParamID::style, (float) preset.style);
+    setParam (apvts, ParamID::length, (float) preset.length);
+
+    if (const auto* fx = k1x::findFactoryFx (preset.name))
+    {
+        setParam (apvts, ParamID::fxDry, fx->dry);
+        setParam (apvts, ParamID::fxWet, fx->wet);
+        if (fx->dst >= 0.f)
+        {
+            setParam (apvts, ParamID::fxDstOn, 1.f);
+            setParam (apvts, ParamID::fxDstDrive, fx->dst);
+        }
+        if (fx->dlyDiv >= 0)
+        {
+            setParam (apvts, ParamID::fxDlyOn, 1.f);
+            setParam (apvts, ParamID::fxDlyDiv, (float) fx->dlyDiv);
+            setParam (apvts, ParamID::fxDlyFb, fx->dlyFb);
+        }
+        if (fx->rev >= 0.f)
+        {
+            setParam (apvts, ParamID::fxRevOn, 1.f);
+            setParam (apvts, ParamID::fxRevSize, fx->rev);
+            setParam (apvts, ParamID::fxRevDamp, fx->revDamp);
+        }
+    }
+
+    if (const auto* eq = k1x::findFactoryEq (preset.name))
+    {
+        setParam (apvts, ParamID::postEqOn, 1.f);
+        setParam (apvts, ParamID::postEqType[0], (float) eq->type);
+        setParam (apvts, ParamID::postEqFreq[0], eq->hz);
+        setParam (apvts, ParamID::postEqGain[0], eq->db);
+        setParam (apvts, ParamID::postEqQ[0], eq->q);
+        if (eq->type2 > 0)
+        {
+            setParam (apvts, ParamID::postEqType[1], (float) eq->type2);
+            setParam (apvts, ParamID::postEqFreq[1], eq->hz2);
+            setParam (apvts, ParamID::postEqGain[1], eq->db2);
+            setParam (apvts, ParamID::postEqQ[1], eq->q2);
+        }
+    }
+
+    apvts.state.setProperty (kPatchName, preset.name, nullptr);
 }
 } // namespace
 
@@ -186,9 +258,17 @@ juce::File K1XAudioProcessor::patchesDir() const
 juce::StringArray K1XAudioProcessor::patchNames() const
 {
     juce::StringArray names;
+    for (const auto& preset : k1x::factoryPresets)
+        names.add (preset.name);
+    juce::StringArray extra;
     for (const auto& entry : juce::RangedDirectoryIterator (patchesDir(), false, "*.k1xp"))
-        names.add (entry.getFile().getFileNameWithoutExtension());
-    names.sortNatural();
+    {
+        const auto stem = entry.getFile().getFileNameWithoutExtension();
+        if (! names.contains (stem))
+            extra.add (stem);
+    }
+    extra.sortNatural();
+    names.addArray (extra);
     return names;
 }
 
@@ -220,12 +300,21 @@ bool K1XAudioProcessor::loadPatchByName (const juce::String& name)
         return true;
     }
     const auto src = patchesDir().getChildFile (stem + kPatchExt);
-    auto xml = juce::XmlDocument::parse (src);
-    if (xml == nullptr || ! xml->hasTagName (apvts.state.getType()))
-        return false;
-    apvts.replaceState (juce::ValueTree::fromXml (*xml));
-    apvts.state.setProperty (kPatchName, stem, nullptr);
-    return true;
+    if (src.existsAsFile())
+    {
+        auto xml = juce::XmlDocument::parse (src);
+        if (xml == nullptr || ! xml->hasTagName (apvts.state.getType()))
+            return false;
+        apvts.replaceState (juce::ValueTree::fromXml (*xml));
+        apvts.state.setProperty (kPatchName, stem, nullptr);
+        return true;
+    }
+    if (const auto* preset = k1x::findFactoryPreset (stem.toRawUTF8()))
+    {
+        applyFactory (*this, *preset);
+        return true;
+    }
+    return false;
 }
 
 bool K1XAudioProcessor::savePatchAs (const juce::String& name)
