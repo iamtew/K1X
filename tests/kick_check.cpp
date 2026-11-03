@@ -80,6 +80,26 @@ int main()
         assert (std::abs (db6 - 6.f) < 0.25f);
     }
 
+    assert (std::abs (k1x::punchToAttackMs (0.f) - 0.3f) < 1e-4f);
+    assert (std::abs (k1x::punchToAttackMs (1.f) - 50.f) < 1e-4f);
+
+    {
+        k1x::KickVoice::Params a;
+        a.punch = 0.f;
+        std::vector<float> fast (44100), slow (44100);
+        k1x::renderKick (fast.data(), (int) fast.size(), 44100.0, a);
+        a.punch = 1.f;
+        k1x::renderKick (slow.data(), (int) slow.size(), 44100.0, a);
+        const int n10 = (int) (0.01f * 44100.f);
+        float e0 = 0.f, e1 = 0.f;
+        for (int i = 0; i < n10; ++i)
+        {
+            e0 += fast[(size_t) i] * fast[(size_t) i];
+            e1 += slow[(size_t) i] * slow[(size_t) i];
+        }
+        assert (e1 < e0);
+    }
+
     assert (k1x::factoryPresetCount >= 60);
     assert (k1x::factoryBankOk());
 

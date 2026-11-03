@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ParameterIDs.h"
+#include "../dsp/KickVoice.h"
 
 #include <JuceHeader.h>
 
@@ -52,8 +53,18 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout
                                                         "P.Decay", pDecR, 0.04f, pct (pDecR)));
     layout.add (std::make_unique<AudioParameterFloat> (ParameterID { ParamID::click, 1 },
                                                         "Click", unit, 0.4f, pct (unit)));
-    layout.add (std::make_unique<AudioParameterFloat> (ParameterID { ParamID::punch, 1 },
-                                                        "Punch", unit, 0.25f, pct (unit)));
+    layout.add (std::make_unique<AudioParameterFloat> (
+        ParameterID { ParamID::punch, 1 }, "Attack / Punch", unit, 0.059f,
+        AudioParameterFloatAttributes()
+            .withStringFromValueFunction ([] (float v, int)
+            {
+                return String (k1x::punchToAttackMs (v), 1) + " ms";
+            })
+            .withValueFromStringFunction ([] (const String& t)
+            {
+                const float ms = jlimit (k1x::kPunchMinMs, k1x::kPunchMaxMs, t.getFloatValue());
+                return (ms - k1x::kPunchMinMs) / (k1x::kPunchMaxMs - k1x::kPunchMinMs);
+            })));
     layout.add (std::make_unique<AudioParameterFloat> (ParameterID { ParamID::decay, 1 },
                                                         "Decay", decR, 0.35f, pct (decR)));
     layout.add (std::make_unique<AudioParameterFloat> (ParameterID { ParamID::drive, 1 },

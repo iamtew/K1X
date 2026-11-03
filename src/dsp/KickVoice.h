@@ -6,6 +6,14 @@
 namespace k1x
 {
 
+inline constexpr float kPunchMinMs = 0.3f;
+inline constexpr float kPunchMaxMs = 50.f;
+
+inline float punchToAttackMs (float punch)
+{
+    return kPunchMinMs + punch * (kPunchMaxMs - kPunchMinMs);
+}
+
 // Analog-ish kick: sine body with pitch drop + noise click, then drive/filters.
 // Style only changes a few envelope/click/harmonic coeffs. Not a circuit model.
 struct KickVoice
@@ -16,7 +24,7 @@ struct KickVoice
         float pitchDrop  = 1.5f;   // octaves above tune at t=0
         float pitchDecay = 0.04f;  // seconds
         float click      = 0.4f;
-        float punch      = 0.25f;  // 0 = ~0.3ms attack, 1 = ~12ms
+        float punch      = 0.059f; // 0 = 0.3ms attack, 1 = 50ms (~3.2ms default)
         float decay      = 0.35f;  // amp decay seconds
         float drive      = 0.2f;
         float hpfHz      = 25.f;
@@ -44,7 +52,7 @@ struct KickVoice
         applyStyle();
         // Keep filter state on retrigger — zeroing it pops.
 
-        const float attMs = 0.3f + params.punch * 11.7f;
+        const float attMs = punchToAttackMs (params.punch);
         attackN = (int) (sr * (double) attMs * 0.001);
         if (attackN < 1)
             attackN = 1;
