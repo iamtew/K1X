@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../parameters/ParameterIDs.h"
+#include "Distortion.h"
 #include "KickRender.h"
 #include "OutputScope.h"
 
@@ -28,6 +29,7 @@ struct PostFx
         preDelay.reset();
         preDelayIdle = true;
         lp.prepare (spec);
+        dstLp.prepare (spec);
         wet.setSize (ch, n);
         scratch.setSize (ch, n);
         prepared = true;
@@ -88,13 +90,27 @@ private:
 
     void processDist (int n, int chs, juce::AudioProcessorValueTreeState& apvts)
     {
+        const int type = juce::jlimit (0, 3, juce::roundToInt (p (apvts, ParamID::fxDstType)));
         const float drive = 1.f + p (apvts, ParamID::fxDstDrive) * 12.f;
+        const float shape = p (apvts, ParamID::fxDstShape);
         for (int ch = 0; ch < chs; ++ch)
         {
             auto* s = wet.getWritePointer (ch);
             for (int i = 0; i < n; ++i)
-                s[i] = std::tanh (s[i] * drive);
+                s[i] = distortSample (type, s[i], drive, shape);
         }
+
+        const float tone = p (apvts, ParamID::fxDstTone);
+        if (tone >= 0.995f)
+        {
+            dstLp.reset();
+            return;
+        }
+        const float cut = 200.f + tone * 11800.f;
+        *dstLp.state = *juce::dsp::IIR::Coefficients<float>::makeLowPass (sr, cut, 0.7f);
+        auto block = juce::dsp::AudioBlock<float> (wet).getSubBlock (0, (size_t) n);
+        juce::dsp::ProcessContextReplacing<float> ctx (block);
+        dstLp.process (ctx);
     }
 
     void processDelay (int n, int chs, float bpm, juce::AudioProcessorValueTreeState& apvts)
@@ -219,6 +235,7 @@ private:
     juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> delay { 192000 };
     juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> preDelay { 192000 };
     DupIIR lp;
+    DupIIR dstLp;
     juce::AudioBuffer<float> wet;
     juce::AudioBuffer<float> scratch;
     double sr = 44100.0;
