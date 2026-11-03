@@ -12,7 +12,7 @@ Kick drum VST3 + Standalone (909 / 808 / 707 / Tight / Hard). Not a circuit clon
 src/
  PluginProcessor.h/.cpp
  PluginEditor.h/.cpp
- dsp/KickVoice.h KickRender.h PostFx.h EqBiquad.h ParametricEq.h
+ dsp/KickVoice.h KickRender.h PostFx.h Distortion.h EqBiquad.h ParametricEq.h
  parameters/ParameterIDs.h ParameterLayout.h
  ui/VersionCompare.h EqPage.h
 docs/

@@ -1,3 +1,4 @@
+#include "dsp/Distortion.h"
 #include "dsp/EqBiquad.h"
 #include "dsp/KickRender.h"
 #include "presets/FactoryPresets.h"
@@ -98,6 +99,20 @@ int main()
             e1 += slow[(size_t) i] * slow[(size_t) i];
         }
         assert (e1 < e0);
+    }
+
+    {
+        const float drive = 5.f;
+        const float x = 0.4f;
+        assert (std::abs (k1x::distortSample (k1x::distSoft, x, drive, 0.5f) - std::tanh (x * drive)) < 1e-6f);
+        const float hard = k1x::distortSample (k1x::distHard, 2.f, drive, 0.5f);
+        assert (hard <= 1.f && hard >= -1.f);
+        assert (std::abs (k1x::distortSample (k1x::distFold, x, drive, 0.5f)
+                          - k1x::distortSample (k1x::distSoft, x, drive, 0.5f)) > 0.05f);
+        float dc = 0.f;
+        for (int i = 0; i < 8; ++i)
+            dc += k1x::distortSample (k1x::distSoft, 0.f, drive, 0.2f);
+        assert (std::abs (dc) < 1e-5f);
     }
 
     assert (k1x::factoryPresetCount >= 60);

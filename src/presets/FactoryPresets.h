@@ -18,12 +18,14 @@ struct FactoryPreset
     int style, length;
 };
 
-// dst < 0 = distortion off. dlyDiv < 0 = delay off (else 0..3 = 1/16..1/2, sync stays on).
+// dst < 0 = distortion off. dstType 0..3 = Soft/Hard/Fold/Diode.
+// dlyDiv < 0 = delay off (else 0..3 = 1/16..1/2, sync stays on).
 // rev < 0 = reverb off (else room size).
 struct FactoryFx
 {
     const char* name;
     float dry, wet, dst;
+    int dstType;
     int dlyDiv;
     float dlyFb;
     float rev, revDamp;
@@ -127,24 +129,24 @@ inline constexpr FactoryPreset factoryPresets[] = {
 };
 
 inline constexpr FactoryFx factoryFx[] = {
-    { "Dub",        1.00f, 0.35f, -1.f,  2, 0.40f, -1.f,  0.40f },
-    { "Industrial", 0.85f, 0.55f, 0.70f, -1, 0.35f, -1.f,  0.40f },
-    { "Gabber",     0.70f, 0.80f, 0.85f, -1, 0.35f, -1.f,  0.40f },
-    { "Frenchcore", 0.55f, 0.90f, 0.95f, -1, 0.35f, -1.f,  0.40f },
-    { "Terror",     0.60f, 0.85f, 0.90f, -1, 0.35f, -1.f,  0.40f },
-    { "Rawstyle",   0.65f, 0.75f, 0.80f, -1, 0.35f, -1.f,  0.40f },
-    { "Fuzz",       0.50f, 1.00f, 0.75f, -1, 0.35f, -1.f,  0.40f },
-    { "Clip",       0.40f, 1.00f, 0.95f, -1, 0.35f, -1.f,  0.40f },
-    { "Saturation", 0.80f, 0.45f, 0.45f, -1, 0.35f, -1.f,  0.40f },
-    { "Chainsaw",   0.45f, 0.90f, 0.85f, -1, 0.35f, -1.f,  0.40f },
-    { "Cone",       0.55f, 0.80f, 0.70f, -1, 0.35f, -1.f,  0.40f },
-    { "Overdrive",  0.75f, 0.50f, 0.55f, -1, 0.35f, -1.f,  0.40f },
-    { "Laser",      1.00f, 0.40f, -1.f,  0, 0.50f, -1.f,  0.40f },
-    { "Hollow",     0.90f, 0.45f, -1.f, -1, 0.35f, 0.70f, 0.60f },
-    { "Alien",      0.80f, 0.55f, -1.f,  1, 0.35f, 0.55f, 0.35f },
-    { "Water",      0.85f, 0.50f, -1.f, -1, 0.35f, 0.65f, 0.50f },
-    { "Zap",        1.00f, 0.35f, -1.f,  0, 0.25f, -1.f,  0.40f },
-    { "Live",       1.00f, 0.22f, -1.f, -1, 0.35f, 0.35f, 0.55f },
+    { "Dub",        1.00f, 0.35f, -1.f,  0,  2, 0.40f, -1.f,  0.40f },
+    { "Industrial", 0.85f, 0.55f, 0.70f, 0, -1, 0.35f, -1.f,  0.40f },
+    { "Gabber",     0.70f, 0.80f, 0.85f, 0, -1, 0.35f, -1.f,  0.40f },
+    { "Frenchcore", 0.55f, 0.90f, 0.95f, 0, -1, 0.35f, -1.f,  0.40f },
+    { "Terror",     0.60f, 0.85f, 0.90f, 0, -1, 0.35f, -1.f,  0.40f },
+    { "Rawstyle",   0.65f, 0.75f, 0.80f, 0, -1, 0.35f, -1.f,  0.40f },
+    { "Fuzz",       0.50f, 1.00f, 0.75f, 3, -1, 0.35f, -1.f,  0.40f },
+    { "Clip",       0.40f, 1.00f, 0.95f, 1, -1, 0.35f, -1.f,  0.40f },
+    { "Saturation", 0.80f, 0.45f, 0.45f, 0, -1, 0.35f, -1.f,  0.40f },
+    { "Chainsaw",   0.45f, 0.90f, 0.85f, 2, -1, 0.35f, -1.f,  0.40f },
+    { "Cone",       0.55f, 0.80f, 0.70f, 0, -1, 0.35f, -1.f,  0.40f },
+    { "Overdrive",  0.75f, 0.50f, 0.55f, 1, -1, 0.35f, -1.f,  0.40f },
+    { "Laser",      1.00f, 0.40f, -1.f,  0,  0, 0.50f, -1.f,  0.40f },
+    { "Hollow",     0.90f, 0.45f, -1.f,  0, -1, 0.35f, 0.70f, 0.60f },
+    { "Alien",      0.80f, 0.55f, -1.f,  0,  1, 0.35f, 0.55f, 0.35f },
+    { "Water",      0.85f, 0.50f, -1.f,  0, -1, 0.35f, 0.65f, 0.50f },
+    { "Zap",        1.00f, 0.35f, -1.f,  0,  0, 0.25f, -1.f,  0.40f },
+    { "Live",       1.00f, 0.22f, -1.f,  0, -1, 0.35f, 0.35f, 0.55f },
 };
 
 inline constexpr FactoryEq factoryEq[] = {
@@ -238,7 +240,7 @@ constexpr bool factoryBankOk()
             if (f.dst != -1.f)
                 return false;
         }
-        else if (! factoryInRange (f.dst, 0.f, 1.f))
+        else if (! factoryInRange (f.dst, 0.f, 1.f) || f.dstType < 0 || f.dstType > 3)
             return false;
         if (f.dlyDiv < 0)
         {

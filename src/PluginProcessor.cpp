@@ -69,6 +69,7 @@ void applyFactory (K1XAudioProcessor& proc, const k1x::FactoryPreset& preset)
         {
             setParam (apvts, ParamID::fxDstOn, 1.f);
             setParam (apvts, ParamID::fxDstDrive, fx->dst);
+            setParam (apvts, ParamID::fxDstType, (float) fx->dstType);
         }
         if (fx->dlyDiv >= 0)
         {

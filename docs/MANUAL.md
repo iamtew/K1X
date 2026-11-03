@@ -25,7 +25,7 @@ Kick one-shot (909 default). MIDI note-on retriggers and sets body pitch from th
 
 Parallel send after the kick. **Dry** is the unprocessed kick; **FX** is Distortion → Delay → Reverb. Turn Dist / Delay / Rev on per block.
 
-- **Drive** — extra tanh on the send (separate from the kick Drive knob).
+- **Dist** — Type (Soft tanh, Hard clip, Fold, Diode), Drive, Tone (post LP), Shape (asymmetry). Separate from the kick Drive knob.
 - **Delay** — Time, feedback, low-pass Cut. **Sync** uses host BPM and **Div** (1/16 … 1/2).
 - **Reverb** — Predelay (ms), Size, Damp, Width. **Sync** snaps Predelay to 1/64 … 1/8 of host BPM.
 
