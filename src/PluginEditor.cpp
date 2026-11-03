@@ -371,16 +371,64 @@ void K1XAudioProcessorEditor::WaveView::paint (juce::Graphics& g)
     g.setColour (kMetal.withAlpha (0.25f));
     g.drawRoundedRectangle (r.reduced (0.5f), 4.f, 1.f);
 
+    auto inner = r.reduced (6.f, 4.f);
+    auto ruler = inner.removeFromTop (14.f);
+
+    if (durationSec > 0.f)
+    {
+        static constexpr float kSteps[] = { 0.01f, 0.02f, 0.05f, 0.1f, 0.2f, 0.5f, 1.f };
+        float step = kSteps[(int) (sizeof kSteps / sizeof kSteps[0]) - 1];
+        for (float s : kSteps)
+            if (durationSec / s <= 8.f)
+            {
+                step = s;
+                break;
+            }
+
+        const bool useMs = durationSec < 1.f;
+        auto xAt = [&] (float t)
+        {
+            return ruler.getX() + (t / durationSec) * ruler.getWidth();
+        };
+        auto tickLabel = [&] (float t) -> juce::String
+        {
+            if (t <= 0.f)
+                return "0";
+            if (useMs)
+                return juce::String (juce::roundToInt (t * 1000.f)) + " ms";
+            return juce::String (t, 2) + " s";
+        };
+
+        g.setFont (boldFont (9.f));
+        g.setColour (kMetal.withAlpha (0.4f));
+        g.drawLine (ruler.getX(), ruler.getBottom(), ruler.getRight(), ruler.getBottom(), 1.f);
+
+        for (float t = 0.f; t < durationSec - 0.4f * step; t += step)
+        {
+            const float x = xAt (t);
+            g.setColour (kMetal.withAlpha (0.55f));
+            g.drawLine (x, ruler.getBottom() - 4.f, x, ruler.getBottom(), 1.f);
+            g.setColour (kMetal.withAlpha (0.75f));
+            g.drawText (tickLabel (t),
+                        juce::Rectangle<float> (x + 2.f, ruler.getY(), 52.f, ruler.getHeight() - 2.f),
+                        juce::Justification::centredLeft, false);
+        }
+        g.setColour (kMetal.withAlpha (0.55f));
+        g.drawLine (ruler.getRight(), ruler.getBottom() - 4.f, ruler.getRight(), ruler.getBottom(), 1.f);
+        g.setColour (kMetal.withAlpha (0.75f));
+        g.drawText (tickLabel (durationSec), ruler, juce::Justification::centredRight, false);
+    }
+
     if (samples.size() < 2)
         return;
 
-    const float mid = r.getCentreY();
-    const float amp = r.getHeight() * 0.42f;
+    const float mid = inner.getCentreY();
+    const float amp = inner.getHeight() * 0.42f;
     juce::Path p;
     const int n = (int) samples.size();
     for (int i = 0; i < n; ++i)
     {
-        const float x = r.getX() + (float) i / (float) (n - 1) * r.getWidth();
+        const float x = inner.getX() + (float) i / (float) (n - 1) * inner.getWidth();
         const float y = mid - samples[(size_t) i] * amp;
         if (i == 0)
             p.startNewSubPath (x, y);
@@ -389,6 +437,22 @@ void K1XAudioProcessorEditor::WaveView::paint (juce::Graphics& g)
     }
     g.setColour (kOrange);
     g.strokePath (p, juce::PathStrokeType (1.2f));
+
+    if (attackSec > 0.0002f && durationSec > 0.f)
+    {
+        const float ax = inner.getX()
+            + juce::jlimit (0.f, 1.f, attackSec / durationSec) * inner.getWidth();
+        juce::Path wedge;
+        wedge.startNewSubPath (inner.getX(), mid);
+        wedge.lineTo (ax, mid - amp);
+        wedge.lineTo (ax, mid + amp);
+        wedge.closeSubPath();
+        g.setColour (kOrange.withAlpha (0.12f));
+        g.fillPath (wedge);
+        g.setColour (kMetal.withAlpha (0.5f));
+        g.strokePath (wedge, juce::PathStrokeType (1.f));
+        g.drawLine (ax, inner.getY(), ax, inner.getBottom(), 1.f);
+    }
 }
 
 K1XAudioProcessorEditor::AboutBox::AboutBox()
@@ -687,7 +751,7 @@ K1XAudioProcessorEditor::K1XAudioProcessorEditor (K1XAudioProcessor& p)
     struct Spec { const char* id; const char* name; };
     static constexpr Spec kKnobs[] = {
         { ParamID::tune, "Tune" }, { ParamID::pitchDrop, "Drop" }, { ParamID::pitchDecay, "P.Decay" },
-        { ParamID::click, "Click" }, { ParamID::punch, "Punch" }, { ParamID::decay, "Decay" },
+        { ParamID::click, "Click" }, { ParamID::punch, "Attack / Punch" }, { ParamID::decay, "Decay" },
         { ParamID::drive, "Drive" }, { ParamID::hpf, "HPF" }, { ParamID::tone, "Tone" },
         { ParamID::lo, "Lo" }, { ParamID::hi, "Hi" }
     };
@@ -807,6 +871,8 @@ void K1XAudioProcessorEditor::rebuildWave()
         --last;
     last = juce::jmax (64, last);
 
+    wave.durationSec = (float) last / 44100.f;
+    wave.attackSec = k1x::punchToAttackMs (proc.currentParams().punch) * 0.001f;
     wave.samples.resize ((size_t) n);
     for (int i = 0; i < n; ++i)
     {

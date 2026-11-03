@@ -86,6 +86,8 @@ private:
     {
         void paint (juce::Graphics& g) override;
         std::vector<float> samples;
+        float durationSec = 0.f;
+        float attackSec = 0.f;
     };
 
     struct PatchBar : public juce::Component
