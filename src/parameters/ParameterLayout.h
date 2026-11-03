@@ -101,7 +101,12 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout
     addUnit (ParamID::fxDry, "Dry", 1.f);
     addUnit (ParamID::fxWet, "FX", 0.f);
     addOn (ParamID::fxDstOn, "Dist On");
+    layout.add (std::make_unique<AudioParameterChoice> (
+        ParameterID { ParamID::fxDstType, 1 }, "Dist Type",
+        StringArray { "Soft", "Hard", "Fold", "Diode" }, 0));
     addUnit (ParamID::fxDstDrive, "Dist Drive", 0.4f);
+    addUnit (ParamID::fxDstTone, "Dist Tone", 1.f);
+    addUnit (ParamID::fxDstShape, "Dist Shape", 0.5f);
     addOn (ParamID::fxDlyOn, "Delay On");
     addUnit (ParamID::fxDlyTime, "Delay Time", 0.35f);
     addUnit (ParamID::fxDlyFb, "Delay Fb", 0.35f);

@@ -181,8 +181,8 @@ private:
         juce::ToggleButton revOn { "Rev" };
         juce::ToggleButton revSync { "Sync" };
         std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> dstOnAtt, dlyOnAtt, dlySyncAtt, revOnAtt, revSyncAtt;
-        juce::ComboBox dlyDiv;
-        std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> dlyDivAtt;
+        juce::ComboBox dstType, dlyDiv;
+        std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> dstTypeAtt, dlyDivAtt;
         juce::Label dlyDivLabel;
         EqPage eq;
     };

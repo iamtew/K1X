@@ -165,7 +165,7 @@ K1XAudioProcessorEditor::FxPage::FxPage (K1XAudioProcessor& p)
 
     struct Spec { const char* id; const char* name; };
     static constexpr Spec kFxKnobs[] = {
-        { ParamID::fxDstDrive, "Drive" },
+        { ParamID::fxDstDrive, "Drive" }, { ParamID::fxDstTone, "Tone" }, { ParamID::fxDstShape, "Shape" },
         { ParamID::fxDlyTime, "Time" }, { ParamID::fxDlyFb, "Fb" }, { ParamID::fxDlyCut, "Cut" },
         { ParamID::fxRevPredelay, "Pre" }, { ParamID::fxRevSize, "Size" },
         { ParamID::fxRevDamp, "Damp" }, { ParamID::fxRevWidth, "Width" }
@@ -177,6 +177,16 @@ K1XAudioProcessorEditor::FxPage::FxPage (K1XAudioProcessor& p)
     }
     addAndMakeVisible (dryStrip);
     addAndMakeVisible (fxStrip);
+
+    dstType.addItem ("Soft", 1);
+    dstType.addItem ("Hard", 2);
+    dstType.addItem ("Fold", 3);
+    dstType.addItem ("Diode", 4);
+    dstType.setColour (juce::ComboBox::textColourId, kMetal);
+    dstType.setColour (juce::ComboBox::arrowColourId, kMetal);
+    addAndMakeVisible (dstType);
+    dstTypeAtt = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment> (
+        p.apvts, ParamID::fxDstType, dstType);
 
     dlyDivLabel.setText ("Div", juce::dontSendNotification);
     dlyDivLabel.setJustificationType (juce::Justification::centred);
@@ -215,9 +225,9 @@ void K1XAudioProcessorEditor::FxPage::parameterChanged (const juce::String& id, 
 
 void K1XAudioProcessorEditor::FxPage::bindPreKnob()
 {
-    if (knobs.size() < 5)
+    if (knobs.size() < 7)
         return;
-    auto* k = knobs[4];
+    auto* k = knobs[6];
     k->att.reset();
     const bool sync = proc.apvts.getRawParameterValue (ParamID::fxRevSync)->load() >= 0.5f;
     k->att = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (
@@ -242,24 +252,31 @@ void K1XAudioProcessorEditor::FxPage::resized()
     mix.removeFromLeft (4);
     fxStrip.setBounds (mix);
 
-    auto dist = fx.removeFromLeft (90);
-    dstOn.setBounds (dist.removeFromTop (22).reduced (4, 1));
-    if (knobs.size() >= 1)
-        knobs[0]->setBounds (dist);
+    auto dist = fx.removeFromLeft (186);
+    auto distTop = dist.removeFromTop (22);
+    dstOn.setBounds (distTop.removeFromLeft (48).reduced (2, 1));
+    dstType.setBounds (distTop.reduced (0, 1));
+    const int dstW = dist.getWidth() / 3;
+    if (knobs.size() >= 3)
+    {
+        knobs[0]->setBounds (dist.removeFromLeft (dstW));
+        knobs[1]->setBounds (dist.removeFromLeft (dstW));
+        knobs[2]->setBounds (dist);
+    }
 
     fx.removeFromLeft (4);
-    auto delay = fx.removeFromLeft (220);
+    auto delay = fx.removeFromLeft (186);
     auto delayTop = delay.removeFromTop (22);
     dlyOn.setBounds (delayTop.removeFromLeft (52).reduced (2, 1));
     dlySync.setBounds (delayTop.removeFromLeft (48).reduced (2, 1));
     dlyDivLabel.setBounds (delayTop.removeFromLeft (28));
     dlyDiv.setBounds (delayTop.removeFromLeft (64).reduced (0, 1));
     const int dlyW = delay.getWidth() / 3;
-    if (knobs.size() >= 4)
+    if (knobs.size() >= 6)
     {
-        knobs[1]->setBounds (delay.removeFromLeft (dlyW));
-        knobs[2]->setBounds (delay.removeFromLeft (dlyW));
-        knobs[3]->setBounds (delay);
+        knobs[3]->setBounds (delay.removeFromLeft (dlyW));
+        knobs[4]->setBounds (delay.removeFromLeft (dlyW));
+        knobs[5]->setBounds (delay);
     }
 
     fx.removeFromLeft (4);
@@ -267,12 +284,12 @@ void K1XAudioProcessorEditor::FxPage::resized()
     revOn.setBounds (revTop.removeFromLeft (48).reduced (2, 1));
     revSync.setBounds (revTop.removeFromLeft (48).reduced (2, 1));
     const int revW = juce::jmax (1, fx.getWidth() / 4);
-    if (knobs.size() >= 8)
+    if (knobs.size() >= 10)
     {
-        knobs[4]->setBounds (fx.removeFromLeft (revW));
-        knobs[5]->setBounds (fx.removeFromLeft (revW));
         knobs[6]->setBounds (fx.removeFromLeft (revW));
-        knobs[7]->setBounds (fx);
+        knobs[7]->setBounds (fx.removeFromLeft (revW));
+        knobs[8]->setBounds (fx.removeFromLeft (revW));
+        knobs[9]->setBounds (fx);
     }
 }
 
