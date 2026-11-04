@@ -23,6 +23,7 @@ Kick one-shot (909 default). MIDI note-on retriggers and sets body pitch from th
 - **Style** — 909, 808, 707, Tight, Hard. Changes click, pitch/amp envelopes, and a bit of harmonic. Does not reset knobs.
 - **Shape** — Sine (default) or triangle body.
 - **Length** — Free, or trim to 1/4, 1/8, 1/16 of host BPM (120 if the host has no tempo).
+- **Hold** — One-shot (default) dies after the decay. Hold keeps the tail going until the next note. Length snaps still cut. Style 808 does not turn this on by itself.
 
 ## Layers
 

@@ -959,6 +959,12 @@ K1XAudioProcessorEditor::K1XAudioProcessorEditor (K1XAudioProcessor& p)
     lengthAtt = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment> (
         proc.apvts, ParamID::length, lengthBox);
 
+    setupCombo (holdLabel, holdBox, "Hold");
+    holdBox.addItem ("One-shot", 1);
+    holdBox.addItem ("Hold", 2);
+    holdAtt = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment> (
+        proc.apvts, ParamID::holdMode, holdBox);
+
     setupCombo (noiseTypeLabel, noiseTypeBox, "Type");
     noiseTypeBox.addItem ("White", 1);
     noiseTypeBox.addItem ("Pink", 2);
@@ -1056,8 +1062,8 @@ K1XAudioProcessorEditor::K1XAudioProcessorEditor (K1XAudioProcessor& p)
     for (auto* id : { ParamID::tune, ParamID::pitchDrop, ParamID::pitchHold, ParamID::pitchDecay,
                       ParamID::click, ParamID::punch, ParamID::ampHold, ParamID::decay, ParamID::drive,
                       ParamID::hpf, ParamID::tone, ParamID::lo, ParamID::hi, ParamID::level,
-                      ParamID::length, ParamID::style, ParamID::bodyShape, ParamID::harm, ParamID::fm,
-                      ParamID::velAmt, ParamID::width })
+                      ParamID::length, ParamID::holdMode, ParamID::style, ParamID::bodyShape,
+                      ParamID::harm, ParamID::fm, ParamID::velAmt, ParamID::width })
         proc.apvts.addParameterListener (id, this);
     eachLayerEqId ([this] (const char* id) { proc.apvts.addParameterListener (id, this); });
     eachLayerVoiceId ([this] (const char* id) { proc.apvts.addParameterListener (id, this); });
@@ -1083,8 +1089,8 @@ K1XAudioProcessorEditor::~K1XAudioProcessorEditor()
     for (auto* id : { ParamID::tune, ParamID::pitchDrop, ParamID::pitchHold, ParamID::pitchDecay,
                       ParamID::click, ParamID::punch, ParamID::ampHold, ParamID::decay, ParamID::drive,
                       ParamID::hpf, ParamID::tone, ParamID::lo, ParamID::hi, ParamID::level,
-                      ParamID::length, ParamID::style, ParamID::bodyShape, ParamID::harm, ParamID::fm,
-                      ParamID::velAmt, ParamID::width })
+                      ParamID::length, ParamID::holdMode, ParamID::style, ParamID::bodyShape,
+                      ParamID::harm, ParamID::fm, ParamID::velAmt, ParamID::width })
         proc.apvts.removeParameterListener (id, this);
     eachLayerEqId ([this] (const char* id) { proc.apvts.removeParameterListener (id, this); });
     eachLayerVoiceId ([this] (const char* id) { proc.apvts.removeParameterListener (id, this); });
@@ -1258,6 +1264,9 @@ void K1XAudioProcessorEditor::layoutContent()
     tools.removeFromLeft (8);
     lengthLabel.setBounds (tools.removeFromLeft (52));
     lengthBox.setBounds (tools.removeFromLeft (80).reduced (0, 2));
+    tools.removeFromLeft (4);
+    holdLabel.setBounds (tools.removeFromLeft (36));
+    holdBox.setBounds (tools.removeFromLeft (80).reduced (0, 2));
     if (standalone)
     {
         tools.removeFromLeft (8);

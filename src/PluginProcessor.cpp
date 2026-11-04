@@ -257,6 +257,7 @@ k1x::KickVoice::Params K1XAudioProcessor::currentParams() const
     p.bodyShape  = juce::roundToInt (raw (ParamID::bodyShape));
     p.harm       = raw (ParamID::harm);
     p.fm         = raw (ParamID::fm);
+    p.holdNote   = juce::roundToInt (raw (ParamID::holdMode)) != 0;
     return p;
 }
 

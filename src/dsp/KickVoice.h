@@ -54,6 +54,7 @@ struct KickVoice
         float lengthSec  = 0.f;    // 0 = free (follow decay)
         float delayMs    = 0.f;    // silence before the hit, so layers can sit late
         int   style      = 0;      // 0=909 1=808 2=707 3=Tight 4=Hard
+        bool  holdNote   = false;  // keep decaying until the next trigger
     };
 
     void prepare (double sampleRate)
@@ -83,9 +84,12 @@ struct KickVoice
             attackN = 1;
 
         // ponytail: free length = ~8 decays then stop; snap length wins if set.
+        // Hold keeps the tail until the next note (32 s ceiling).
         float life = ampDec * 8.f + params.ampHold;
         if (life < 0.05f)
             life = 0.05f;
+        if (params.holdNote && params.lengthSec <= 0.f)
+            life = 32.f;
         if (params.lengthSec > 0.f)
             life = params.lengthSec;
         totalN = (int) (sr * (double) life);

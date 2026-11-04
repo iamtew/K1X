@@ -64,6 +64,27 @@ int main()
         boom = std::max (boom, std::abs (longBuf[(size_t) i]));
     assert (boom > 0.01f);
 
+    {
+        k1x::KickVoice::Params hp;
+        hp.decay = 0.15f;
+        hp.style = 0;
+        hp.click = 0.f;
+        hp.holdNote = true;
+        std::vector<float> longHold (44100 * 3);
+        k1x::renderKick (longHold.data(), (int) longHold.size(), 44100.0, hp);
+        float lateH = 0.f;
+        const int after8 = (int) (hp.decay * 8.f * 44100.f) + 2000;
+        for (int i = after8; i < (int) longHold.size(); ++i)
+            lateH = std::max (lateH, std::abs (longHold[(size_t) i]));
+        assert (lateH > 1e-4f);
+        hp.holdNote = false;
+        k1x::renderKick (longHold.data(), (int) longHold.size(), 44100.0, hp);
+        float lateOff = 0.f;
+        for (int i = after8; i < (int) longHold.size(); ++i)
+            lateOff = std::max (lateOff, std::abs (longHold[(size_t) i]));
+        assert (lateOff < 1e-4f);
+    }
+
     p.style = 3; // Tight
     k1x::renderKick (longBuf.data(), (int) longBuf.size(), 44100.0, p);
     float tightTail = 0.f;

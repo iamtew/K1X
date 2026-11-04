@@ -253,6 +253,9 @@ private:
     juce::Label lengthLabel;
     juce::ComboBox lengthBox;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> lengthAtt;
+    juce::Label holdLabel;
+    juce::ComboBox holdBox;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> holdAtt;
     juce::Label noiseTypeLabel;
     juce::ComboBox noiseTypeBox;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> noiseTypeAtt;
