@@ -141,8 +141,20 @@ struct KickVoice
         const float clickSig = (n - clickLp) * clickEnv * params.click * clickMul * amp;
 
         float x = body * amp + clickSig;
-        // Drive gain sits around 1..5 so tanh actually saturates.
-        x = std::tanh (x * (1.f + params.drive * 4.f));
+        // Drive 0: 1x tanh (old sound). Drive > 0: 2x interpolate then tanh.
+        const float g = 1.f + params.drive * 4.f;
+        if (params.drive <= 0.f)
+        {
+            x = std::tanh (x * g);
+        }
+        else
+        {
+            const float mid = 0.5f * (driveZ + x);
+            const float y0 = std::tanh (mid * g);
+            const float y1 = std::tanh (x * g);
+            driveZ = x;
+            x = 0.5f * (y0 + y1);
+        }
 
         const float hpC = onePoleCoeff (params.hpfHz);
         const float lpC = onePoleCoeff (params.toneHz);
@@ -215,7 +227,7 @@ private:
 
     void resetFilters()
     {
-        hpZ = lpZ = loZ = hiZ = clickLp = 0.f;
+        hpZ = lpZ = loZ = hiZ = clickLp = driveZ = 0.f;
     }
 
     double sr = 44100.0;
@@ -228,7 +240,7 @@ private:
     bool active_ = false;
     bool waiting_ = false;
     std::uint32_t noise = 1;
-    float hpZ = 0, lpZ = 0, loZ = 0, hiZ = 0, clickLp = 0;
+    float hpZ = 0, lpZ = 0, loZ = 0, hiZ = 0, clickLp = 0, driveZ = 0;
     float clickTau = 0.004f, clickMul = 1.f, pitchDec = 0.04f, ampDec = 0.35f, harmonic = 0.f;
 };
 

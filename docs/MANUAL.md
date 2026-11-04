@@ -12,7 +12,7 @@ Kick one-shot (909 default). MIDI note-on retriggers and sets body pitch from th
 - **Attack / Punch** — amp attack time (0.3–50 ms, short = clickier). The waveform draws an Ableton-style fade wedge for that length; it is an indication, not a clip start trim.
 - **A.Hold** — how long the amp sits at 1 after Punch, before Decay. 0 is the old attack-then-fall.
 - **Decay** — amp tail.
-- **Drive** — tanh saturation.
+- **Drive** — tanh saturation. Oversampled when Drive is up; 0 stays the old 1× tanh.
 - **Harm** — extra 2nd harmonic plus a little 3rd. 707/Hard still add their own 2nd on top. 0 is sine body.
 - **FM** — a little phase modulation of the body. 0 is off.
 - **HPF** — rumble cut.
@@ -65,7 +65,7 @@ Sample knobs:
 
 Parallel send after the layered mix. **Dry** is the unprocessed mix; **FX** is Distortion → Delay → Reverb. Mix **Send** (per layer, default full) is how much of that layer goes into the send. Old patches stay the same. Turn Dist / Delay / Rev on per block.
 
-- **Dist** — Type (Soft tanh, Hard clip, Fold, Diode), Drive, Tone (post LP), Shape (asymmetry). Separate from the kick Drive knob.
+- **Dist** — Type (Soft tanh, Hard clip, Fold, Diode), Drive, Tone (post LP), Shape (asymmetry). Separate from the kick Drive knob. Runs 2× oversampled when Dist is on.
 - **Delay** — Time, feedback, low-pass Cut. **Sync** uses host BPM and **Div** (1/16 … 1/2).
 - **Reverb** — Predelay (ms), Size, Damp, Width. **Sync** snaps Predelay to 1/64 … 1/8 of host BPM.
 

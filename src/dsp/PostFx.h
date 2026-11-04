@@ -32,6 +32,9 @@ struct PostFx
         dstLp.prepare (spec);
         wet.setSize (ch, n);
         scratch.setSize (ch, n);
+        distOs.initProcessing ((size_t) n);
+        distOs.reset();
+        osMaxN = n;
         prepared = true;
     }
 
@@ -96,11 +99,31 @@ private:
         const int type = juce::jlimit (0, 3, juce::roundToInt (p (apvts, ParamID::fxDstType)));
         const float drive = 1.f + p (apvts, ParamID::fxDstDrive) * 12.f;
         const float shape = p (apvts, ParamID::fxDstShape);
-        for (int ch = 0; ch < chs; ++ch)
+        auto inBlock = juce::dsp::AudioBlock<float> (wet).getSubBlock (0, (size_t) n);
+        if (chs < 2)
         {
-            auto* s = wet.getWritePointer (ch);
-            for (int i = 0; i < n; ++i)
-                s[i] = distortSample (type, s[i], drive, shape);
+            for (int ch = 0; ch < chs; ++ch)
+            {
+                auto* s = wet.getWritePointer (ch);
+                for (int i = 0; i < n; ++i)
+                    s[i] = distortSample (type, s[i], drive, shape);
+            }
+        }
+        else
+        {
+        if (n > osMaxN)
+        {
+            distOs.initProcessing ((size_t) n);
+            osMaxN = n;
+        }
+        auto hi = distOs.processSamplesUp (inBlock);
+        const int hn = (int) hi.getNumSamples();
+        const int hc = juce::jmin (chs, (int) hi.getNumChannels());
+        for (int ch = 0; ch < hc; ++ch)
+            for (int i = 0; i < hn; ++i)
+                hi.setSample ((size_t) ch, (size_t) i,
+                              distortSample (type, hi.getSample ((size_t) ch, (size_t) i), drive, shape));
+        distOs.processSamplesDown (inBlock);
         }
 
         const float tone = p (apvts, ParamID::fxDstTone);
@@ -239,6 +262,9 @@ private:
     juce::dsp::DelayLine<float, juce::dsp::DelayLineInterpolationTypes::Linear> preDelay { 192000 };
     DupIIR lp;
     DupIIR dstLp;
+    juce::dsp::Oversampling<float> distOs { 2, 1,
+        juce::dsp::Oversampling<float>::filterHalfBandPolyphaseIIR, false, false };
+    int osMaxN = 0;
     juce::AudioBuffer<float> wet;
     juce::AudioBuffer<float> scratch;
     double sr = 44100.0;
