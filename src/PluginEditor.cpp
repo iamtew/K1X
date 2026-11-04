@@ -1106,8 +1106,6 @@ void K1XAudioProcessorEditor::timerCallback()
 {
     if (waveDirty)
         rebuildWave();
-    if (! anyExtraLayer() && mixView)
-        selectLayer (0);
     bindKnobs();
     if (layerMix.isVisible())
         layerMix.refresh();
@@ -1285,9 +1283,19 @@ void K1XAudioProcessorEditor::layoutContent()
     wave.setBounds (waveRow);
     r.removeFromTop (6);
     layerEq.setBounds (r);
-    layerMix.setBounds (r);
     const int cols = 6;
     const int rows = 3;
+    if (mixView)
+    {
+        const int duckH = juce::jmin (110, r.getHeight() / 4);
+        auto duckRow = r.removeFromTop (duckH);
+        const int dw = duckRow.getWidth() / cols;
+        knobs[0]->setBounds (duckRow.removeFromLeft (dw));
+        knobs[1]->setBounds (duckRow.removeFromLeft (dw));
+        for (int i = 2; i < knobs.size(); ++i)
+            knobs[i]->setBounds ({});
+    }
+    layerMix.setBounds (r);
     const int cellW = r.getWidth() / cols;
     const int cellH = r.getHeight() / rows;
     const bool showNoiseType = editorPage == 0 && ! layerEqOpen && ! mixView
@@ -1310,8 +1318,9 @@ void K1XAudioProcessorEditor::layoutContent()
                                 && slotType (selectedLayer - 1) == ParamID::layerSample;
     if (showSampleLoad)
         sampleLoadBtn.setBounds (cellAt (4).reduced (8, juce::jmax (0, (cellH - 28) / 2)));
-    for (int i = 0; i < knobs.size(); ++i)
-        knobs[i]->setBounds (cellAt (i));
+    if (! mixView)
+        for (int i = 0; i < knobs.size(); ++i)
+            knobs[i]->setBounds (cellAt (i));
 
     aboutBox.setBounds (content.getLocalBounds());
     applyPageVisibility();
@@ -1394,7 +1403,12 @@ void K1XAudioProcessorEditor::bindKnobs()
             spec[n++] = { id, name };
     };
 
-    if (! mixView && selectedLayer == 0)
+    if (mixView)
+    {
+        add (ParamID::duckDepth, "Duck");
+        add (ParamID::duckTime, "Time");
+    }
+    else if (! mixView && selectedLayer == 0)
     {
         add (ParamID::tune, "Tune");
         add (ParamID::pitchDrop, "Drop");
@@ -1502,8 +1516,6 @@ void K1XAudioProcessorEditor::selectLayer (int layer)
 
 void K1XAudioProcessorEditor::selectMix()
 {
-    if (! anyExtraLayer())
-        return;
     mixView = true;
     knobSig.clear();
     bindKnobs();
@@ -1516,12 +1528,13 @@ void K1XAudioProcessorEditor::applyPageVisibility()
     const bool main = editorPage == 0;
     const bool showEq = main && layerEqOpen && ! mixView;
     const bool showKnobs = main && ! layerEqOpen && ! mixView;
+    const bool showMixKnobs = main && mixView;
     const bool showNoiseType = showKnobs && selectedLayer > 0
                                && slotType (selectedLayer - 1) == ParamID::layerNoise;
     wave.setVisible (main);
     rail.setVisible (main);
     for (auto* k : knobs)
-        k->setVisible (showKnobs && k->used);
+        k->setVisible (((showKnobs || showMixKnobs) && k->used));
     const bool showSampleLoad = showKnobs && selectedLayer > 0
                                 && slotType (selectedLayer - 1) == ParamID::layerSample;
     noiseTypeLabel.setVisible (showNoiseType);
@@ -1556,8 +1569,7 @@ void K1XAudioProcessorEditor::LayerRail::layoutItems (juce::Array<Item>& items) 
     }
     if (used < ParamID::slotCount)
         push ({ -1, 0, false, true, {} });
-    if (used > 0)
-        push ({ -1, 0, true, false, {} });
+    push ({ -1, 0, true, false, {} });
 }
 
 void K1XAudioProcessorEditor::LayerRail::paint (juce::Graphics& g)

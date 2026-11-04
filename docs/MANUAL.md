@@ -17,6 +17,7 @@ Kick one-shot (909 default). MIDI note-on retriggers and sets body pitch from th
 - **FM** — a little phase modulation of the body. 0 is off.
 - **Vel** — how much MIDI velocity thins Click, Punch, Decay, and extra layer gains. 0 ignores velocity. Velocity 127 (and Play) matches today's sound.
 - **Width** — a little stereo on Noise/Click layers above ~120 Hz. 0 is fully mono (old behaviour). The sub stays mono.
+- **Duck / Time** (Mix) — a 0.5–4 ms dip on the kick body and Bass slots when the click/beater hits. 0 is off (old patches). Click, Noise, Sweep, and Sample stay put.
 - **HPF** — rumble cut.
 - **Tone** — low-pass.
 - **Lo / Hi** — shelves (±12 dB around centre).

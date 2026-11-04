@@ -10,6 +10,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstdio>
+#include <tuple>
 #include <vector>
 
 int main()
@@ -509,6 +510,61 @@ int main()
     assert (k1x::stackFor (6).layer[1].type == 1);
     assert (k1x::stackFor (6).layer[1].delayMs == 4.f);
     assert (k1x::stackFor (0).layer[0].a != k1x::stackFor (6).layer[0].a);
+
+    {
+        k1x::LayerDuck d;
+        d.prepare (44100.0);
+        d.arm (0.f, 1.5f, 0.f);
+        for (int i = 0; i < 200; ++i)
+            assert (d.tick() == 1.f);
+
+        d.arm (0.f, 1.5f, 1.f);
+        float minG = 1.f;
+        const int n = (int) (0.0015 * 44100.0) + 2;
+        for (int i = 0; i < n; ++i)
+            minG = std::min (minG, d.tick());
+        assert (minG < 0.05f);
+    }
+
+    {
+        k1x::KickVoice::Params kp;
+        kp.tuneHz = 50.f;
+        kp.decay = 0.3f;
+        kp.click = 0.f;
+        kp.level = 1.f;
+        k1x::SlotVoiceParams slot[3];
+        slot[0].type = k1x::layerClick;
+        slot[0].click.decayMs = 8.f;
+        slot[0].click.delayMs = 0.f;
+        slot[1].type = k1x::layerBass;
+        slot[1].bass.tuneHz = 40.f;
+        slot[1].bass.decay = 0.3f;
+        slot[1].bass.delayMs = 0.f;
+        auto energy = [&] (float duck) {
+            k1x::LayerStack st;
+            st.prepare (44100.0);
+            st.trigger (kp, slot, duck, 1.5f);
+            float body = 0.f, bass = 0.f, click = 0.f;
+            const int n = (int) (0.0015 * 44100.0);
+            for (int i = 0; i < n; ++i)
+            {
+                float layer[4];
+                st.tickInto (layer);
+                body += layer[0] * layer[0];
+                click += layer[1] * layer[1];
+                bass += layer[2] * layer[2];
+            }
+            return std::tuple<float, float, float> { body, click, bass };
+        };
+        auto [b0, c0, s0] = energy (0.f);
+        auto [b1, c1, s1] = energy (1.f);
+        assert (c0 > 1.0e-6f);
+        assert (std::abs (c1 - c0) / c0 < 0.05f);
+        assert (b0 > 1.0e-8f);
+        assert (b1 < b0 * 0.7f);
+        assert (s0 > 1.0e-8f);
+        assert (s1 < s0 * 0.7f);
+    }
 
     std::vector<std::string> tags { "0.0.2", "v0.0.1" };
     assert (k1x::newestNewerTag (tags, "0.0.1") == "0.0.2");

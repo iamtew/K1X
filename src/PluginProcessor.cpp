@@ -372,7 +372,7 @@ void K1XAudioProcessor::renderLayerChans (float* const* chan, int n, double samp
 
     k1x::LayerStack local;
     local.prepare (sampleRate);
-    local.trigger (kickP, slots);
+    local.trigger (kickP, slots, raw (ParamID::duckDepth), raw (ParamID::duckTime));
 
     for (int i = 0; i < n; ++i)
     {
@@ -448,7 +448,7 @@ void K1XAudioProcessor::renderBars (juce::AudioBuffer<float>& dest, double sampl
     {
         if (wait <= 0)
         {
-            local.trigger (kickP, slotParams);
+            local.trigger (kickP, slotParams, raw (ParamID::duckDepth), raw (ParamID::duckTime));
             wait = period;
         }
         float layer[k1x::kMixLayers];
@@ -599,7 +599,7 @@ void K1XAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mi
         }
         if (fire)
         {
-            stack.trigger (kickP, slots);
+            stack.trigger (kickP, slots, raw (ParamID::duckDepth), raw (ParamID::duckTime));
             fire = false;
             if (looping && wait <= 0)
                 wait = period;

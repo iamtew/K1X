@@ -498,6 +498,59 @@ inline void renderClickLayer (float* dest, int n, double sampleRate, const Click
         dest[i] = v.process();
 }
 
+// Click-ducks-sub: a 1–2 ms cosine dip on the body, not a compressor.
+struct LayerDuck
+{
+    void prepare (double sampleRate)
+    {
+        sr = sampleRate > 1.0 ? sampleRate : 44100.0;
+        active = false;
+    }
+
+    void arm (float delayMs, float timeMs, float depth)
+    {
+        if (depth < 0.f)
+            depth = 0.f;
+        if (depth > 1.f)
+            depth = 1.f;
+        if (timeMs < 0.5f)
+            timeMs = 0.5f;
+        delayN = (int) (sr * (double) delayMs * 0.001);
+        if (delayN < 0)
+            delayN = 0;
+        timeN = (int) (sr * (double) timeMs * 0.001);
+        if (timeN < 2)
+            timeN = 2;
+        amt = depth;
+        pos = 0;
+        active = amt > 0.f;
+    }
+
+    float tick()
+    {
+        if (! active)
+            return 1.f;
+        float w = 0.f;
+        if (pos >= delayN && pos < delayN + timeN)
+        {
+            const float den = (float) (timeN - 1);
+            const float u = den <= 0.f ? 0.f : (float) (pos - delayN) / den;
+            w = 0.5f * (1.f - std::cos (6.283185307179586f * u));
+        }
+        ++pos;
+        if (pos >= delayN + timeN)
+            active = false;
+        return 1.f - amt * w;
+    }
+
+    double sr = 44100.0;
+    int pos = 0;
+    int delayN = 0;
+    int timeN = 2;
+    float amt = 0.f;
+    bool active = false;
+};
+
 inline constexpr int kMixLayers = 4;
 inline constexpr int layerOff = 0;
 inline constexpr int layerBass = 1;
@@ -568,6 +621,7 @@ struct LayerStack
     void prepare (double sampleRate)
     {
         kick.prepare (sampleRate);
+        duck.prepare (sampleRate);
         for (int i = 0; i < 3; ++i)
         {
             bass[i].prepare (sampleRate);
@@ -588,8 +642,23 @@ struct LayerStack
         }
     }
 
-    void trigger (const KickVoice::Params& kickP, const SlotVoiceParams* slots)
+    void trigger (const KickVoice::Params& kickP, const SlotVoiceParams* slots,
+                  float duckDepth = 0.f, float duckTimeMs = 1.5f)
     {
+        float duckDelay = kickP.delayMs;
+        bool clickSlot = false;
+        if (slots != nullptr)
+        {
+            for (int s = 0; s < 3; ++s)
+            {
+                if (slots[s].type != layerClick)
+                    continue;
+                if (! clickSlot || slots[s].click.delayMs < duckDelay)
+                    duckDelay = slots[s].click.delayMs;
+                clickSlot = true;
+            }
+        }
+        duck.arm (duckDelay, duckTimeMs, duckDepth);
         // Last mixed sample fades out so a live tail does not step to 0.
         for (int L = 0; L < kMixLayers; ++L)
         {
@@ -620,9 +689,10 @@ struct LayerStack
 
     void tickInto (float* layer)
     {
-        layer[0] = kick.process();
+        const float dg = duck.tick();
+        layer[0] = kick.process (dg);
         for (int s = 0; s < 3; ++s)
-            layer[s + 1] = bass[s].process() + noise[s].process()
+            layer[s + 1] = bass[s].process() * dg + noise[s].process()
                          + click[s].process() + sweep[s].process()
                          + sample[s].process();
         for (int L = 0; L < kMixLayers; ++L)
@@ -638,6 +708,7 @@ struct LayerStack
     }
 
     KickVoice kick;
+    LayerDuck duck;
     BassVoice bass[3];
     NoiseVoice noise[3];
     ClickVoice click[3];

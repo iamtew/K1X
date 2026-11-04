@@ -142,6 +142,20 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout
         ParameterID { ParamID::velAmt, 1 }, "Vel", unit, 0.f, pct (unit)));
     layout.add (std::make_unique<AudioParameterFloat> (
         ParameterID { ParamID::width, 1 }, "Width", unit, 0.f, pct (unit)));
+    layout.add (std::make_unique<AudioParameterFloat> (
+        ParameterID { ParamID::duckDepth, 1 }, "Duck", unit, 0.f, pct (unit)));
+    auto duckMsR = NormalisableRange<float> (0.5f, 4.f, 0.1f);
+    layout.add (std::make_unique<AudioParameterFloat> (
+        ParameterID { ParamID::duckTime, 1 }, "Duck Time", duckMsR, 1.5f,
+        AudioParameterFloatAttributes()
+            .withStringFromValueFunction ([] (float v, int)
+            {
+                return String (v, 1) + " ms";
+            })
+            .withValueFromStringFunction ([duckMsR] (const String& t)
+            {
+                return jlimit (duckMsR.start, duckMsR.end, t.getFloatValue());
+            })));
 
     auto addOn = [&] (const char* id, const char* name, bool def = false)
     {

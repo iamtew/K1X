@@ -104,7 +104,7 @@ struct KickVoice
             fadeN = totalN / 4;
     }
 
-    float process()
+    float process (float bodyDuck = 1.f)
     {
         if (! active_)
             return 0.f;
@@ -158,7 +158,9 @@ struct KickVoice
         clickLp += 0.35f * (n - clickLp);
         const float clickSig = (n - clickLp) * clickEnv * params.click * clickMul * amp;
 
-        float x = body * amp + clickSig;
+        if (bodyDuck < 0.f)
+            bodyDuck = 0.f;
+        float x = body * amp * bodyDuck + clickSig;
         // Drive 0: 1x tanh (old sound). Drive > 0: 2x interpolate then tanh.
         const float g = 1.f + params.drive * 4.f;
         if (params.drive <= 0.f)
