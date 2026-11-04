@@ -77,6 +77,6 @@ Five-band parametric under the FX row. Spectrum is the live output after FX and 
 
 Click **K1X** + version in the top left for About and a GitHub update check.
 
-Standalone: **Play** previews. **Export WAV** (plugin and Standalone) writes one shot plus FX tail, 24-bit stereo, 44.1 or 48 kHz. **Norm** (default on) peak-normalizes to −0.1 dBTP; turn it off to keep the raw render. Play is clipped at 0 dBFS so it does not splat; Volume still flashes orange if it would have hit 0 dBFS. The waveform is the layered mix you hear on Play, before post FX. Editing a slot overlays that layer on the mix.
+Standalone: **Play** previews. **Export WAV** (plugin and Standalone) writes one shot plus FX tail, 24-bit stereo, 44.1 or 48 kHz. **Norm** (default on) peak-normalizes to −0.1 dBTP; turn it off to keep the raw render. Drag the waveform onto a DAW or the desktop for the same WAV plus a `.k1xp`. Play is clipped at 0 dBFS so it does not splat; Volume still flashes orange if it would have hit 0 dBFS. The waveform is the layered mix you hear on Play, before post FX. Editing a slot overlays that layer on the mix.
 
 Drag the window corner to scale (40%–150%); the scale is saved with the session.

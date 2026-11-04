@@ -9,6 +9,7 @@
 #include <vector>
 
 class K1XAudioProcessorEditor : public juce::AudioProcessorEditor,
+                                public juce::DragAndDropContainer,
                                 private juce::Timer,
                                 private juce::AudioProcessorValueTreeState::Listener
 {
@@ -40,6 +41,7 @@ private:
     juce::Rectangle<int> titleHitBounds() const;
     void openAbout();
     void exportWav();
+    void dragKickFiles();
     void commitLoopBpm();
     void refreshPatchName();
     void openPatchMenu();
@@ -94,6 +96,10 @@ private:
     struct WaveView : public juce::Component
     {
         void paint (juce::Graphics& g) override;
+        void mouseDown (const juce::MouseEvent&) override { dragStarted = false; }
+        void mouseDrag (const juce::MouseEvent& e) override;
+        std::function<void()> onDragOut;
+        bool dragStarted = false;
         struct Trace
         {
             std::vector<float> samples;

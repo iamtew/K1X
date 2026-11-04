@@ -617,6 +617,14 @@ void K1XAudioProcessorEditor::WaveView::paint (juce::Graphics& g)
     }
 }
 
+void K1XAudioProcessorEditor::WaveView::mouseDrag (const juce::MouseEvent& e)
+{
+    if (dragStarted || onDragOut == nullptr || e.getDistanceFromDragStart() < 12)
+        return;
+    dragStarted = true;
+    onDragOut();
+}
+
 K1XAudioProcessorEditor::AboutBox::AboutBox()
 {
     status.setJustificationType (juce::Justification::centred);
@@ -909,6 +917,7 @@ K1XAudioProcessorEditor::K1XAudioProcessorEditor (K1XAudioProcessor& p)
     logo = juce::ImageCache::getFromMemory (BinaryData::logo_png, BinaryData::logo_pngSize);
 
     content.addAndMakeVisible (wave);
+    wave.onDragOut = [this] { dragKickFiles(); };
 
     content.addAndMakeVisible (rail);
     for (int i = 0; i < 18; ++i)
@@ -1879,4 +1888,25 @@ void K1XAudioProcessorEditor::exportWav()
                               }
                               k1x::writeWav (file, buf, sr, start, count, safe->proc.wavNorm);
                           });
+}
+
+void K1XAudioProcessorEditor::dragKickFiles()
+{
+    const double sr = proc.wavSr;
+    const int count = (int) (sr * 4.0);
+    juce::AudioBuffer<float> buf (2, count);
+    proc.renderWithPost (buf, sr);
+    const auto dir = juce::File::getSpecialLocation (juce::File::tempDirectory);
+    const auto wav = dir.getChildFile ("K1X.wav");
+    const auto patch = dir.getChildFile ("K1X.k1xp");
+    wav.deleteFile();
+    patch.deleteFile();
+    if (! k1x::writeWav (wav, buf, sr, 0, count, proc.wavNorm))
+        return;
+    proc.exportPatch (patch);
+    juce::StringArray files;
+    files.add (wav.getFullPathName());
+    if (patch.existsAsFile())
+        files.add (patch.getFullPathName());
+    performExternalDragDropOfFiles (files, false);
 }
