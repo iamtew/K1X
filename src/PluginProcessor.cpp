@@ -252,7 +252,10 @@ void K1XAudioProcessor::fillSlots (k1x::SlotVoiceParams* out, float kickHz, floa
         d.noise.hpfHz = raw (ParamID::lyNoiseHp[s]);
         d.noise.lpfHz = raw (ParamID::lyNoiseLp[s]);
         d.noise.delayMs = delay;
-        d.noise.lengthSec = lengthSec;
+        d.noise.attackMs = raw (ParamID::lyNoiseAtk[s]);
+        d.noise.type = juce::roundToInt (raw (ParamID::lyNoiseType[s]));
+        const float noiseLenMs = raw (ParamID::lyNoiseLen[s]);
+        d.noise.lengthSec = noiseLenMs > 0.f ? noiseLenMs * 0.001f : lengthSec;
         d.click.pitchHz = raw (ParamID::lyClickPitch[s]);
         d.click.decayMs = raw (ParamID::lyClickDecay[s]);
         d.click.tone = raw (ParamID::lyClickTone[s]);

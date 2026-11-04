@@ -156,6 +156,8 @@ private:
 
 struct NoiseVoice
 {
+    enum Type { white = 0, pink = 1, brown = 2 };
+
     struct Params
     {
         float decay = 0.12f;
@@ -163,6 +165,8 @@ struct NoiseVoice
         float lpfHz = 6000.f;
         float delayMs = 0.f;
         float lengthSec = 0.f;
+        float attackMs = 0.f;
+        int type = white;
     };
 
     void prepare (double sampleRate) { clock.prepare (sampleRate); }
@@ -171,12 +175,18 @@ struct NoiseVoice
     {
         params = p;
         noise = 0xAce1u;
+        hpZ = lpZ = 0.f;
+        pinkB0 = pinkB1 = pinkB2 = 0.f;
+        brownZ = 0.f;
         float life = params.decay * 6.f;
         if (life < 0.03f)
             life = 0.03f;
         if (params.lengthSec > 0.f)
             life = params.lengthSec;
         clock.arm (params.delayMs, life);
+        attackN = (int) (clock.sr * (double) params.attackMs * 0.001);
+        if (attackN < 0)
+            attackN = 0;
     }
 
     void silence() { clock.silence(); }
@@ -190,7 +200,20 @@ struct NoiseVoice
         const float dec = params.decay < 0.01f ? 0.01f : params.decay;
         const float amp = std::exp ((float) (-t / (double) dec));
         noise = noise * 1664525u + 1013904223u;
-        const float n = ((float) (int) (noise >> 8) * (1.f / 8388608.f)) - 1.f;
+        float n = ((float) (int) (noise >> 8) * (1.f / 8388608.f)) - 1.f;
+        if (params.type == pink)
+        {
+            // Paul Kellet economy pink.
+            pinkB0 = 0.99765f * pinkB0 + n * 0.0990460f;
+            pinkB1 = 0.96300f * pinkB1 + n * 0.2965164f;
+            pinkB2 = 0.57000f * pinkB2 + n * 1.0526913f;
+            n = pinkB0 + pinkB1 + pinkB2 + n * 0.1848f;
+        }
+        else if (params.type == brown)
+        {
+            brownZ += 0.02f * (n - brownZ);
+            n = brownZ * 3.5f;
+        }
         float hp = params.hpfHz;
         float lp = params.lpfHz;
         if (hp > lp)
@@ -204,7 +227,13 @@ struct NoiseVoice
         hpZ += hpC * (n - hpZ);
         const float high = n - hpZ;
         lpZ += lpC * (high - lpZ);
-        const float y = lpZ * amp * clock.fade();
+        float atk = 1.f;
+        if (attackN > 0 && clock.pos < attackN)
+        {
+            const float u = (float) clock.pos / (float) attackN;
+            atk = 0.5f * (1.f - std::cos (3.141592653589793f * u));
+        }
+        const float y = lpZ * amp * atk * clock.fade();
         clock.advance();
         return y;
     }
@@ -214,7 +243,10 @@ struct NoiseVoice
 private:
     LayerClock clock;
     std::uint32_t noise = 1;
+    int attackN = 0;
     float hpZ = 0.f, lpZ = 0.f;
+    float pinkB0 = 0.f, pinkB1 = 0.f, pinkB2 = 0.f;
+    float brownZ = 0.f;
 };
 
 struct ClickVoice
