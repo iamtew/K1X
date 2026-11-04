@@ -173,13 +173,16 @@ constexpr bool factorySame (const char* a, const char* b)
 }
 
 // Dressed twin of factoryPresets[i]. type 0 is unused.
-// 1 bass: semitones, decay, drive, hpf. 2 noise: decay, hpf, lpf.
-// 3 click: hz, ms, tone. 4 sweep: start hz, octaves, decay.
+// Shared: gain, delayMs, lengthMs (0=Auto), attackMs.
+// 1 bass: st, decay, drive, hpf, drop, lp.
+// 2 noise: decay, hpf, lpf, type (0 white 1 pink 2 brown).
+// 3 click: hz, ms, tone, hpf, lpf.
+// 4 sweep: start hz, octaves, decay, drive, lp.
 struct FactoryLayer
 {
     int type;
-    float a, b, c, d;
-    float gain, delayMs;
+    float a, b, c, d, e, f;
+    float gain, delayMs, lengthMs, attackMs;
 };
 
 struct FactoryStack
@@ -188,18 +191,18 @@ struct FactoryStack
 };
 
 inline constexpr FactoryStack stackRecipes[6] = {
-    { { { 1, -12.f, 0.70f, 0.12f, 18.f, 0.75f, 0.f },
-        { 3, 2400.f, 5.f,  0.35f, 0.f,  0.40f, 1.f } } },
-    { { { 1, -12.f, 0.90f, 0.08f, 16.f, 0.80f, 0.f },
-        { 2, 0.18f, 400.f, 5000.f, 0.f, 0.30f, 4.f } } },
-    { { { 4, 280.f, 2.2f,  0.07f, 0.f,  0.55f, 0.f },
-        { 2, 0.06f, 1500.f, 8000.f, 0.f, 0.28f, 0.f } } },
-    { { { 1, -19.f, 1.10f, 0.20f, 14.f, 0.70f, 2.f },
-        { 0, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f } } },
-    { { { 3, 3200.f, 3.5f, 0.20f, 0.f,  0.50f, 0.f },
-        { 2, 0.10f, 900.f, 6500.f, 0.f, 0.33f, 3.f } } },
-    { { { 1, -7.f,  0.45f, 0.25f, 28.f, 0.65f, 0.f },
-        { 4, 500.f, 3.0f,  0.05f, 0.f,  0.42f, 0.f } } },
+    { { { 1, -12.f, 0.70f, 0.12f, 18.f, 0.8f, 600.f,  0.75f, 0.f, 0.f,  0.f },
+        { 3, 2400.f, 5.f,  0.35f, 1200.f, 10000.f, 0.f, 0.40f, 1.f, 0.f,  0.f } } },
+    { { { 1, -12.f, 0.90f, 0.08f, 16.f, 0.4f, 400.f,  0.80f, 0.f, 0.f,  0.f },
+        { 2, 0.18f, 400.f, 5000.f, 1.f, 0.f, 0.f,     0.30f, 4.f, 80.f, 2.f } } },
+    { { { 4, 280.f, 2.2f,  0.07f, 0.15f, 5000.f, 0.f, 0.55f, 0.f, 0.f,  0.f },
+        { 2, 0.06f, 1500.f, 8000.f, 0.f, 0.f, 0.f,    0.28f, 0.f, 40.f, 0.f } } },
+    { { { 1, -19.f, 1.10f, 0.20f, 14.f, 1.2f, 350.f, 0.70f, 2.f, 0.f,  4.f },
+        { 0, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f,           0.f, 0.f, 0.f,  0.f } } },
+    { { { 3, 3200.f, 3.5f, 0.20f, 2000.f, 12000.f, 0.f, 0.50f, 0.f, 12.f, 0.f },
+        { 2, 0.10f, 900.f, 6500.f, 0.f, 0.f, 0.f,    0.33f, 3.f, 50.f, 0.f } } },
+    { { { 1, -7.f,  0.45f, 0.25f, 28.f, 0.6f, 1200.f, 0.65f, 0.f, 0.f,  0.f },
+        { 4, 500.f, 3.0f,  0.05f, 0.35f, 6000.f, 0.f, 0.42f, 0.f, 0.f,  0.f } } },
 };
 
 inline constexpr FactoryStack stackFor (int index)
@@ -359,19 +362,30 @@ constexpr bool factoryBankOk()
             if (L.type == 0)
                 continue;
             if (L.type < 1 || L.type > 4 || ! factoryInRange (L.gain, 0.f, 1.f)
-                || ! factoryInRange (L.delayMs, 0.f, 80.f))
+                || ! factoryInRange (L.delayMs, 0.f, 80.f)
+                || ! factoryInRange (L.attackMs, 0.f, 30.f))
                 return false;
             if (L.type == 1 && (! factoryInRange (L.a, -24.f, 12.f) || ! factoryInRange (L.b, 0.05f, 2.f)
-                                || ! factoryInRange (L.c, 0.f, 1.f) || ! factoryInRange (L.d, 10.f, 200.f)))
+                                || ! factoryInRange (L.c, 0.f, 1.f) || ! factoryInRange (L.d, 10.f, 200.f)
+                                || ! factoryInRange (L.e, 0.f, 3.f) || ! factoryInRange (L.f, 200.f, 8000.f)
+                                || ! factoryInRange (L.lengthMs, 0.f, 2000.f)))
                 return false;
             if (L.type == 2 && (! factoryInRange (L.a, 0.02f, 1.5f) || ! factoryInRange (L.b, 80.f, 8000.f)
-                                || ! factoryInRange (L.c, 200.f, 16000.f)))
+                                || ! factoryInRange (L.c, 200.f, 16000.f)
+                                || L.d < 0.f || L.d > 2.f
+                                || ! factoryInRange (L.lengthMs, 0.f, 400.f)))
                 return false;
             if (L.type == 3 && (! factoryInRange (L.a, 200.f, 8000.f) || ! factoryInRange (L.b, 0.5f, 40.f)
-                                || ! factoryInRange (L.c, 0.f, 1.f)))
+                                || ! factoryInRange (L.c, 0.f, 1.f)
+                                || ! factoryInRange (L.d, 80.f, 8000.f)
+                                || ! factoryInRange (L.e, 200.f, 16000.f)
+                                || ! factoryInRange (L.lengthMs, 0.f, 80.f)))
                 return false;
             if (L.type == 4 && (! factoryInRange (L.a, 40.f, 4000.f) || ! factoryInRange (L.b, 0.f, 5.f)
-                                || ! factoryInRange (L.c, 0.02f, 0.5f)))
+                                || ! factoryInRange (L.c, 0.02f, 0.5f)
+                                || ! factoryInRange (L.d, 0.f, 1.f)
+                                || ! factoryInRange (L.e, 200.f, 8000.f)
+                                || ! factoryInRange (L.lengthMs, 0.f, 400.f)))
                 return false;
         }
     }
