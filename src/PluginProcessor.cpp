@@ -2,6 +2,10 @@
 #include "PluginEditor.h"
 #include "presets/FactoryPresets.h"
 
+static_assert (ParamID::layerOff == k1x::layerOff, "layer type ids");
+static_assert (ParamID::layerSweep == k1x::layerSweep, "layer type ids");
+static_assert (ParamID::layerCount == k1x::kMixLayers, "layer count");
+
 #include <cstring>
 #include <vector>
 
@@ -114,7 +118,9 @@ K1XAudioProcessor::K1XAudioProcessor()
 
 void K1XAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
-    voice.prepare (sampleRate);
+    stack.prepare (sampleRate);
+    for (auto& m : layerMeters)
+        m.prepare (sampleRate);
     analyser.prepare (sampleRate);
     meter.prepare (sampleRate);
     const int ch = juce::jmax (2, getTotalNumOutputChannels());
@@ -168,13 +174,80 @@ k1x::KickVoice::Params K1XAudioProcessor::currentParams() const
     p.hi         = raw (ParamID::hi);
     p.level      = raw (ParamID::level);
     p.lengthSec  = k1x::lengthSeconds (lengthChoice(), hostBpm());
+    p.delayMs    = raw (ParamID::lyDelay[0]);
     p.style      = juce::roundToInt (raw (ParamID::style));
     return p;
 }
 
+void K1XAudioProcessor::fillSlots (k1x::SlotVoiceParams* out, float kickHz, float lengthSec) const
+{
+    for (int s = 0; s < ParamID::slotCount; ++s)
+    {
+        auto& d = out[s];
+        d.type = juce::roundToInt (raw (ParamID::lyType[s]));
+        const float delay = raw (ParamID::lyDelay[ParamID::layerOfSlot (s)]);
+        d.bass.tuneHz = kickHz * std::pow (2.f, raw (ParamID::lyBassTune[s]) / 12.f);
+        d.bass.decay = raw (ParamID::lyBassDecay[s]);
+        d.bass.drive = raw (ParamID::lyBassDrive[s]);
+        d.bass.hpfHz = raw (ParamID::lyBassHp[s]);
+        d.bass.delayMs = delay;
+        d.bass.lengthSec = lengthSec;
+        d.noise.decay = raw (ParamID::lyNoiseDecay[s]);
+        d.noise.hpfHz = raw (ParamID::lyNoiseHp[s]);
+        d.noise.lpfHz = raw (ParamID::lyNoiseLp[s]);
+        d.noise.delayMs = delay;
+        d.noise.lengthSec = lengthSec;
+        d.click.pitchHz = raw (ParamID::lyClickPitch[s]);
+        d.click.decayMs = raw (ParamID::lyClickDecay[s]);
+        d.click.tone = raw (ParamID::lyClickTone[s]);
+        d.click.delayMs = delay;
+        d.click.lengthSec = lengthSec;
+        d.sweep.startHz = raw (ParamID::lySweepStart[s]);
+        d.sweep.dropOct = raw (ParamID::lySweepDrop[s]);
+        d.sweep.decay = raw (ParamID::lySweepDecay[s]);
+        d.sweep.delayMs = delay;
+        d.sweep.lengthSec = lengthSec;
+    }
+}
+
+void K1XAudioProcessor::fillAmps (float* out) const
+{
+    float gain[k1x::kMixLayers];
+    bool mute[k1x::kMixLayers], solo[k1x::kMixLayers], enabled[k1x::kMixLayers], flip[k1x::kMixLayers];
+    enabled[0] = true;
+    for (int s = 0; s < ParamID::slotCount; ++s)
+        enabled[ParamID::layerOfSlot (s)] = juce::roundToInt (raw (ParamID::lyType[s])) != ParamID::layerOff;
+    for (int i = 0; i < k1x::kMixLayers; ++i)
+    {
+        gain[i] = raw (ParamID::lyGain[i]);
+        mute[i] = raw (ParamID::lyMute[i]) >= 0.5f;
+        solo[i] = raw (ParamID::lySolo[i]) >= 0.5f;
+        flip[i] = raw (ParamID::lyFlip[i]) >= 0.5f;
+    }
+    k1x::layerAmps (gain, mute, solo, enabled, flip, out);
+}
+
 void K1XAudioProcessor::renderShot (float* dest, int n, double sampleRate) const
 {
-    k1x::renderKick (dest, n, sampleRate, currentParams());
+    auto kickP = currentParams();
+    k1x::SlotVoiceParams slots[ParamID::slotCount];
+    fillSlots (slots, kickP.tuneHz, kickP.lengthSec);
+    float amp[k1x::kMixLayers];
+    fillAmps (amp);
+
+    k1x::LayerStack local;
+    local.prepare (sampleRate);
+    local.trigger (kickP, slots);
+    const float master = kickP.level;
+    for (int i = 0; i < n; ++i)
+    {
+        float layer[k1x::kMixLayers];
+        local.tickInto (layer);
+        float acc = 0.f;
+        for (int L = 0; L < k1x::kMixLayers; ++L)
+            acc += layer[L] * amp[L];
+        dest[i] = acc * master;
+    }
 }
 
 void K1XAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midi)
@@ -192,19 +265,39 @@ void K1XAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mi
         }
     midi.clear();
 
+    auto kickP = currentParams();
+    if (midiNote >= 0)
+        kickP.tuneHz = k1x::midiNoteToHz (midiNote);
     if (trig)
     {
-        auto p = currentParams();
-        if (midiNote >= 0)
-            p.tuneHz = k1x::midiNoteToHz (midiNote);
-        voice.trigger (p);
+        k1x::SlotVoiceParams slots[ParamID::slotCount];
+        fillSlots (slots, kickP.tuneHz, kickP.lengthSec);
+        stack.trigger (kickP, slots);
     }
 
+    float amp[k1x::kMixLayers];
+    fillAmps (amp);
     auto* l = buffer.getWritePointer (0);
     const int n = buffer.getNumSamples();
-    const float g = raw (ParamID::level);
+    const float g = kickP.level;
+    float peak[k1x::kMixLayers] = {};
     for (int i = 0; i < n; ++i)
-        l[i] = voice.process() * g;
+    {
+        float layer[k1x::kMixLayers];
+        stack.tickInto (layer);
+        float acc = 0.f;
+        for (int L = 0; L < k1x::kMixLayers; ++L)
+        {
+            const float y = layer[L] * amp[L];
+            acc += y;
+            const float a = std::abs (y);
+            if (a > peak[L])
+                peak[L] = a;
+        }
+        l[i] = acc * g;
+    }
+    for (int L = 0; L < k1x::kMixLayers; ++L)
+        layerMeters[L].setPeak (peak[L]);
 
     for (int ch = 1; ch < buffer.getNumChannels(); ++ch)
         buffer.copyFrom (ch, 0, buffer, 0, 0, n);

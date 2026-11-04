@@ -2,6 +2,7 @@
 
 #include "dsp/KickRender.h"
 #include "dsp/KickVoice.h"
+#include "dsp/Layers.h"
 #include "dsp/OutputScope.h"
 #include "dsp/ParametricEq.h"
 #include "dsp/PostFx.h"
@@ -50,6 +51,7 @@ public:
     k1x::OutputMeter& outputMeter() { return meter; }
     k1x::OutputMeter& dryMeter() { return postFx.dryMeter; }
     k1x::OutputMeter& fxMeter() { return postFx.fxMeter; }
+    k1x::OutputMeter& layerMeter (int layer) { return layerMeters[layer]; }
 
     juce::File patchesDir() const;
     juce::StringArray patchNames() const;
@@ -67,8 +69,11 @@ public:
 private:
     float raw (const char* id) const;
     int lengthChoice() const;
+    void fillSlots (k1x::SlotVoiceParams* out, float kickHz, float lengthSec) const;
+    void fillAmps (float* out) const;
 
-    k1x::KickVoice voice;
+    k1x::LayerStack stack;
+    k1x::OutputMeter layerMeters[k1x::kMixLayers];
     k1x::PostFx postFx;
     k1x::ParametricEq postEq;
     k1x::EqAnalyser analyser;

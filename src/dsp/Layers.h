@@ -353,6 +353,89 @@ inline void renderClickLayer (float* dest, int n, double sampleRate, const Click
         dest[i] = v.process();
 }
 
+inline constexpr int kMixLayers = 4;
+inline constexpr int layerOff = 0;
+inline constexpr int layerBass = 1;
+inline constexpr int layerNoise = 2;
+inline constexpr int layerClick = 3;
+inline constexpr int layerSweep = 4;
+
+struct SlotVoiceParams
+{
+    int type = layerOff;
+    BassVoice::Params bass;
+    NoiseVoice::Params noise;
+    ClickVoice::Params click;
+    SweepVoice::Params sweep;
+};
+
+// gain is linear. flip true inverts. A solo anywhere mutes every layer that is not soloed.
+// Disabled or muted layers contribute 0. The voice still has to be ticked by the caller.
+inline void layerAmps (const float* gain, const bool* mute, const bool* solo,
+                       const bool* enabled, const bool* flip, float* out, int n = kMixLayers)
+{
+    bool anySolo = false;
+    for (int i = 0; i < n; ++i)
+        if (enabled[i] && solo[i])
+            anySolo = true;
+    for (int i = 0; i < n; ++i)
+    {
+        const bool hear = enabled[i] && ! mute[i] && (! anySolo || solo[i]);
+        out[i] = hear ? gain[i] * (flip[i] ? -1.f : 1.f) : 0.f;
+    }
+}
+
+struct LayerStack
+{
+    void prepare (double sampleRate)
+    {
+        kick.prepare (sampleRate);
+        for (int i = 0; i < 3; ++i)
+        {
+            bass[i].prepare (sampleRate);
+            noise[i].prepare (sampleRate);
+            click[i].prepare (sampleRate);
+            sweep[i].prepare (sampleRate);
+        }
+    }
+
+    void trigger (const KickVoice::Params& kickP, const SlotVoiceParams* slots)
+    {
+        kick.trigger (kickP);
+        for (int s = 0; s < 3; ++s)
+        {
+            bass[s].silence();
+            noise[s].silence();
+            click[s].silence();
+            sweep[s].silence();
+            if (slots == nullptr)
+                continue;
+            switch (slots[s].type)
+            {
+                case layerBass:  bass[s].trigger (slots[s].bass); break;
+                case layerNoise: noise[s].trigger (slots[s].noise); break;
+                case layerClick: click[s].trigger (slots[s].click); break;
+                case layerSweep: sweep[s].trigger (slots[s].sweep); break;
+                default: break;
+            }
+        }
+    }
+
+    void tickInto (float* layer)
+    {
+        layer[0] = kick.process();
+        for (int s = 0; s < 3; ++s)
+            layer[s + 1] = bass[s].process() + noise[s].process()
+                         + click[s].process() + sweep[s].process();
+    }
+
+    KickVoice kick;
+    BassVoice bass[3];
+    NoiseVoice noise[3];
+    ClickVoice click[3];
+    SweepVoice sweep[3];
+};
+
 inline void renderSweep (float* dest, int n, double sampleRate, const SweepVoice::Params& p)
 {
     SweepVoice v;

@@ -165,6 +165,41 @@ int main()
         for (int i = 0; i < 8000; ++i)
             swPeak = std::max (swPeak, std::abs (buf[(size_t) i]));
         assert (swPeak > 0.05f);
+
+        float gain[4] = { 1.f, 0.5f, 1.f, 1.f };
+        bool mute[4] = { false, false, true, false };
+        bool solo[4] = { false, true, false, false };
+        bool enabled[4] = { true, true, true, false };
+        bool flip[4] = { true, false, false, false };
+        float amp[4];
+        k1x::layerAmps (gain, mute, solo, enabled, flip, amp);
+        assert (amp[0] == 0.f);
+        assert (std::abs (amp[1] - 0.5f) < 1.0e-6f);
+        assert (amp[2] == 0.f);
+        assert (amp[3] == 0.f);
+
+        const float sub = 100.f * std::pow (2.f, -12.f / 12.f);
+        assert (std::abs (sub - 50.f) < 1.0e-3f);
+
+        k1x::LayerStack stack;
+        stack.prepare (44100.0);
+        k1x::KickVoice::Params kp;
+        kp.tuneHz = 50.f;
+        kp.decay = 0.3f;
+        kp.level = 1.f;
+        k1x::SlotVoiceParams slot[3];
+        slot[0].type = k1x::layerBass;
+        slot[0].bass.tuneHz = sub * 0.5f;
+        slot[0].bass.decay = 0.3f;
+        stack.trigger (kp, slot);
+        float both = 0.f;
+        for (int i = 0; i < 2000; ++i)
+        {
+            float layer[4];
+            stack.tickInto (layer);
+            both += (layer[0] + layer[1]) * (layer[0] + layer[1]);
+        }
+        assert (both > 0.05f);
     }
 
     assert (k1x::factoryPresetCount >= 60);
