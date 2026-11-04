@@ -27,6 +27,7 @@
         <FILE id="dstH001" name="Distortion.h" compile="0" resource="0" file="src/dsp/Distortion.h"/>
         <FILE id="exnH001" name="ExportNorm.h" compile="0" resource="0" file="src/dsp/ExportNorm.h"/>
         <FILE id="wexH001" name="WavExport.h" compile="0" resource="0" file="src/dsp/WavExport.h"/>
+        <FILE id="stwH001" name="StereoWidth.h" compile="0" resource="0" file="src/dsp/StereoWidth.h"/>
       </GROUP>
       <GROUP id="prmGrp01" name="parameters">
         <FILE id="pidH001" name="ParameterIDs.h" compile="0" resource="0" file="src/parameters/ParameterIDs.h"/>

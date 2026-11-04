@@ -531,6 +531,24 @@ inline void layerSendMix (const float* layer, const float* amp, const float* sen
     }
 }
 
+inline void layerSendMixSplit (const float* layer, const float* amp, const float* sendAmt,
+                               const bool* isWide, float& mid, float& wide,
+                               float& send, int n = kMixLayers)
+{
+    mid = 0.f;
+    wide = 0.f;
+    send = 0.f;
+    for (int i = 0; i < n; ++i)
+    {
+        const float y = layer[i] * amp[i];
+        send += y * sendAmt[i];
+        if (isWide[i])
+            wide += y;
+        else
+            mid += y;
+    }
+}
+
 inline void layerAmps (const float* gain, const bool* mute, const bool* solo,
                        const bool* enabled, const bool* flip, float* out, int n = kMixLayers)
 {

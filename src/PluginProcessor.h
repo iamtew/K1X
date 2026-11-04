@@ -4,6 +4,7 @@
 #include "dsp/KickVoice.h"
 #include "dsp/Layers.h"
 #include "dsp/OutputScope.h"
+#include "dsp/StereoWidth.h"
 #include "dsp/ParametricEq.h"
 #include "dsp/PostFx.h"
 #include "parameters/ParameterLayout.h"
@@ -84,6 +85,7 @@ private:
     void fillAmps (float* out) const;
     void fillSends (float* out) const;
     void applyVelocity (k1x::KickVoice::Params& p, float* amp, int vel) const;
+    void fillWide (bool* out) const;
 
     std::atomic<bool> loopOn { false };
     std::atomic<float> loopBpm { 140.f };
@@ -104,6 +106,7 @@ private:
         std::atomic<int> live { 0 };
     };
     SlotSample slotSamples[ParamID::slotCount];
+    k1x::StereoWidth stereoWidth;
     k1x::PostFx postFx;
     k1x::ParametricEq postEq;
     k1x::EqAnalyser analyser;

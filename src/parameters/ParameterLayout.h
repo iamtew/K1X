@@ -121,6 +121,8 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout
         ParameterID { ParamID::fm, 1 }, "FM", unit, 0.f, pct (unit)));
     layout.add (std::make_unique<AudioParameterFloat> (
         ParameterID { ParamID::velAmt, 1 }, "Vel", unit, 0.f, pct (unit)));
+    layout.add (std::make_unique<AudioParameterFloat> (
+        ParameterID { ParamID::width, 1 }, "Width", unit, 0.f, pct (unit)));
 
     auto addOn = [&] (const char* id, const char* name, bool def = false)
     {

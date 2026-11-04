@@ -1,5 +1,6 @@
 #include "dsp/Distortion.h"
 #include "dsp/ExportNorm.h"
+#include "dsp/StereoWidth.h"
 #include "dsp/EqBiquad.h"
 #include "dsp/KickRender.h"
 #include "dsp/Layers.h"
@@ -501,6 +502,20 @@ int main()
         float p = k1x::truePeak (hot, 4);
         assert (p <= k1x::kExportDbtpLin + 1.0e-4f);
         assert (p > 0.9f);
+    }
+
+    {
+        k1x::StereoWidth w;
+        w.prepare (44100.0);
+        float L = 0.f, R = 1.f;
+        w.process (0.4f, 0.1f, 0.f, L, R);
+        assert (std::abs (L - R) < 1e-6f);
+        assert (std::abs (L - 0.5f) < 1e-6f);
+        w.process (0.4f, 0.1f, 1.f, L, R);
+        // First sample delay is 0 so L may equal R; run a few ms.
+        for (int i = 0; i < 400; ++i)
+            w.process (0.4f, 0.1f, 1.f, L, R);
+        assert (std::abs (L - R) > 1e-4f);
     }
 
     std::printf ("kick_check ok  peak=%.3f energy=%.1f\n", peak, energy);

@@ -1057,7 +1057,7 @@ K1XAudioProcessorEditor::K1XAudioProcessorEditor (K1XAudioProcessor& p)
                       ParamID::click, ParamID::punch, ParamID::ampHold, ParamID::decay, ParamID::drive,
                       ParamID::hpf, ParamID::tone, ParamID::lo, ParamID::hi, ParamID::level,
                       ParamID::length, ParamID::style, ParamID::bodyShape, ParamID::harm, ParamID::fm,
-                      ParamID::velAmt })
+                      ParamID::velAmt, ParamID::width })
         proc.apvts.addParameterListener (id, this);
     eachLayerEqId ([this] (const char* id) { proc.apvts.addParameterListener (id, this); });
     eachLayerVoiceId ([this] (const char* id) { proc.apvts.addParameterListener (id, this); });
@@ -1084,7 +1084,7 @@ K1XAudioProcessorEditor::~K1XAudioProcessorEditor()
                       ParamID::click, ParamID::punch, ParamID::ampHold, ParamID::decay, ParamID::drive,
                       ParamID::hpf, ParamID::tone, ParamID::lo, ParamID::hi, ParamID::level,
                       ParamID::length, ParamID::style, ParamID::bodyShape, ParamID::harm, ParamID::fm,
-                      ParamID::velAmt })
+                      ParamID::velAmt, ParamID::width })
         proc.apvts.removeParameterListener (id, this);
     eachLayerEqId ([this] (const char* id) { proc.apvts.removeParameterListener (id, this); });
     eachLayerVoiceId ([this] (const char* id) { proc.apvts.removeParameterListener (id, this); });
@@ -1399,6 +1399,7 @@ void K1XAudioProcessorEditor::bindKnobs()
         add (ParamID::harm, "Harm");
         add (ParamID::fm, "FM");
         add (ParamID::velAmt, "Vel");
+        add (ParamID::width, "Width");
         add (ParamID::hpf, "HPF");
         add (ParamID::tone, "Tone");
         add (ParamID::lo, "Lo");

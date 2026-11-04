@@ -16,6 +16,7 @@ Kick one-shot (909 default). MIDI note-on retriggers and sets body pitch from th
 - **Harm** — extra 2nd harmonic plus a little 3rd. 707/Hard still add their own 2nd on top. 0 is sine body.
 - **FM** — a little phase modulation of the body. 0 is off.
 - **Vel** — how much MIDI velocity thins Click, Punch, Decay, and extra layer gains. 0 ignores velocity. Velocity 127 (and Play) matches today's sound.
+- **Width** — a little stereo on Noise/Click layers above ~120 Hz. 0 is fully mono (old behaviour). The sub stays mono.
 - **HPF** — rumble cut.
 - **Tone** — low-pass.
 - **Lo / Hi** — shelves (±12 dB around centre).

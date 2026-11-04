@@ -201,6 +201,7 @@ void K1XAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     sendScratch.setSize (ch, cap, false, false, true);
     postFx.prepare (sampleRate, samplesPerBlock, ch);
     postEq.prepare (sampleRate, samplesPerBlock, ch);
+    stereoWidth.prepare (sampleRate);
 }
 
 bool K1XAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
@@ -331,6 +332,16 @@ void K1XAudioProcessor::fillAmps (float* out) const
         flip[i] = raw (ParamID::lyFlip[i]) >= 0.5f;
     }
     k1x::layerAmps (gain, mute, solo, enabled, flip, out);
+}
+
+void K1XAudioProcessor::fillWide (bool* out) const
+{
+    out[0] = false;
+    for (int s = 0; s < ParamID::slotCount; ++s)
+    {
+        const int t = juce::roundToInt (raw (ParamID::lyType[s]));
+        out[ParamID::layerOfSlot (s)] = t == ParamID::layerNoise || t == ParamID::layerClick;
+    }
 }
 
 void K1XAudioProcessor::applyVelocity (k1x::KickVoice::Params& p, float* amp, int vel) const
@@ -466,25 +477,32 @@ void K1XAudioProcessor::renderBars (juce::AudioBuffer<float>& dest, double sampl
     }
 
     const float master = kickP.level;
+    const float width = raw (ParamID::width);
+    bool isWide[k1x::kMixLayers];
+    fillWide (isWide);
     auto* l = dest.getWritePointer (0);
+    auto* r = dest.getNumChannels() > 1 ? dest.getWritePointer (1) : nullptr;
     juce::AudioBuffer<float> sendBuf (dest.getNumChannels(), n);
     sendBuf.clear();
     auto* s0 = sendBuf.getWritePointer (0);
+    k1x::StereoWidth sw;
+    sw.prepare (sampleRate);
     for (int i = 0; i < n; ++i)
     {
         float layer[k1x::kMixLayers];
         for (int L = 0; L < k1x::kMixLayers; ++L)
             layer[L] = storage[L][(size_t) i];
-        float dry = 0.f, send = 0.f;
-        k1x::layerSendMix (layer, amp, sendAmt, dry, send);
-        l[i] = dry * master;
+        float mid = 0.f, wide = 0.f, send = 0.f;
+        k1x::layerSendMixSplit (layer, amp, sendAmt, isWide, mid, wide, send);
+        float L = 0.f, R = 0.f;
+        sw.process (mid * master, wide * master, width, L, R);
+        l[i] = L;
+        if (r != nullptr)
+            r[i] = R;
         s0[i] = send * master;
     }
     for (int ch = 1; ch < dest.getNumChannels(); ++ch)
-    {
-        dest.copyFrom (ch, 0, dest, 0, 0, n);
         sendBuf.copyFrom (ch, 0, sendBuf, 0, 0, n);
-    }
 
     // ponytail: two bars then keep the second, so the downbeat has the previous hit's tail.
     // A reverb longer than one bar still will not cycle cleanly.
@@ -604,8 +622,12 @@ void K1XAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mi
         layerAnalysers[L].push (view);
     }
     const float g = kickP.level;
+    const float width = raw (ParamID::width);
+    bool isWide[k1x::kMixLayers];
+    fillWide (isWide);
     float peak[k1x::kMixLayers] = {};
     const int sendN = juce::jmin (nEq, sendScratch.getNumSamples());
+    auto* rch = buffer.getNumChannels() > 1 ? buffer.getWritePointer (1) : nullptr;
     for (int i = 0; i < nEq; ++i)
     {
         float layer[k1x::kMixLayers];
@@ -616,18 +638,26 @@ void K1XAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mi
             if (a > peak[L])
                 peak[L] = a;
         }
-        float dry = 0.f, send = 0.f;
-        k1x::layerSendMix (layer, amp, sendAmt, dry, send);
-        l[i] = dry * g;
+        float mid = 0.f, wide = 0.f, send = 0.f;
+        k1x::layerSendMixSplit (layer, amp, sendAmt, isWide, mid, wide, send);
+        float L = 0.f, R = 0.f;
+        stereoWidth.process (mid * g, wide * g, width, L, R);
+        l[i] = L;
+        if (rch != nullptr)
+            rch[i] = R;
         if (i < sendN)
             sendScratch.setSample (0, i, send * g);
     }
     for (int i = nEq; i < n; ++i)
+    {
         l[i] = 0.f;
+        if (rch != nullptr)
+            rch[i] = 0.f;
+    }
     for (int L = 0; L < k1x::kMixLayers; ++L)
         layerMeters[L].setPeak (peak[L]);
 
-    for (int ch = 1; ch < buffer.getNumChannels(); ++ch)
+    for (int ch = 2; ch < buffer.getNumChannels(); ++ch)
         buffer.copyFrom (ch, 0, buffer, 0, 0, n);
     for (int i = sendN; i < sendScratch.getNumSamples() && i < n; ++i)
         sendScratch.setSample (0, i, 0.f);
@@ -665,25 +695,32 @@ void K1XAudioProcessor::renderWithPost (juce::AudioBuffer<float>& dest, double s
     float sendAmt[k1x::kMixLayers];
     fillSends (sendAmt);
     const float master = currentParams().level;
+    const float width = raw (ParamID::width);
+    bool isWide[k1x::kMixLayers];
+    fillWide (isWide);
     juce::AudioBuffer<float> sendBuf (chs, n);
     sendBuf.clear();
     auto* d0 = dest.getWritePointer (0);
+    auto* d1 = chs > 1 ? dest.getWritePointer (1) : nullptr;
     auto* s0 = sendBuf.getWritePointer (0);
+    k1x::StereoWidth sw;
+    sw.prepare (sampleRate);
     for (int i = 0; i < n; ++i)
     {
         float layer[k1x::kMixLayers];
         for (int L = 0; L < k1x::kMixLayers; ++L)
             layer[L] = chan[L][i];
-        float dry = 0.f, send = 0.f;
-        k1x::layerSendMix (layer, amp, sendAmt, dry, send);
-        d0[i] = dry * master;
+        float mid = 0.f, wide = 0.f, send = 0.f;
+        k1x::layerSendMixSplit (layer, amp, sendAmt, isWide, mid, wide, send);
+        float L = 0.f, R = 0.f;
+        sw.process (mid * master, wide * master, width, L, R);
+        d0[i] = L;
+        if (d1 != nullptr)
+            d1[i] = R;
         s0[i] = send * master;
     }
     for (int ch = 1; ch < chs; ++ch)
-    {
-        dest.copyFrom (ch, 0, dest, 0, 0, n);
         sendBuf.copyFrom (ch, 0, sendBuf, 0, 0, n);
-    }
 
     k1x::PostFx fx;
     k1x::ParametricEq eq;
