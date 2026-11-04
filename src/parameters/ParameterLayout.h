@@ -161,9 +161,6 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout
     {
         layout.add (std::make_unique<AudioParameterBool> (ParameterID { id, 1 }, name, def));
     };
-    addOn (ParamID::ctxHats, "Hats");
-    layout.add (std::make_unique<AudioParameterFloat> (
-        ParameterID { ParamID::ctxHatGain, 1 }, "Hats Level", unit, 0.125f, pct (unit)));
     auto addUnit = [&] (const char* id, const char* name, float def)
     {
         layout.add (std::make_unique<AudioParameterFloat> (

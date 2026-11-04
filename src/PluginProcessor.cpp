@@ -15,7 +15,6 @@ namespace
 {
 const juce::Identifier kPatchName { "PATCH_NAME" };
 const juce::Identifier kSamplePath[ParamID::slotCount] { "LY1_SAMPLE", "LY2_SAMPLE", "LY3_SAMPLE" };
-const juce::Identifier kCtxLoopPath { "CTX_LOOP" };
 constexpr const char* kInitPatch = "Init Patch";
 constexpr const char* kPatchExt = ".k1xp";
 
@@ -190,7 +189,6 @@ K1XAudioProcessor::K1XAudioProcessor()
 void K1XAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     stack.prepare (sampleRate);
-    hat.prepare (sampleRate);
     for (auto& m : layerMeters)
         m.prepare (sampleRate);
     // Host blocks stay within the prepared size. 8192 covers a later, larger callback
@@ -593,8 +591,6 @@ void K1XAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mi
     {
         trig = true;
         loopWait = 0;
-        hatWait = 0;
-        ctxLoopPos = 0.0;
     }
     const float bpm = juce::jlimit (40.f, 240.f, loopBpm.load (std::memory_order_relaxed));
     const int period = juce::jmax (1, (int) (getSampleRate() * 60.0 / (double) bpm));
@@ -706,58 +702,6 @@ void K1XAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mi
 
     analyser.push (mainOut);
     meter.push (mainOut);
-
-    if (looping)
-    {
-        const float cg = raw (ParamID::ctxHatGain);
-        const bool hatsOn = raw (ParamID::ctxHats) >= 0.5f;
-        const int hatPeriod = juce::jmax (1, period / 2);
-        int hw = hatWait;
-        k1x::NoiseVoice::Params hp;
-        hp.decay = 0.035f;
-        hp.hpfHz = 7000.f;
-        hp.lpfHz = 16000.f;
-        const int live = ctxLoop.live.load (std::memory_order_acquire);
-        const auto& cbuf = ctxLoop.buf[live];
-        const int cn = cbuf.getNumSamples();
-        const float* cdata = cn > 1 ? cbuf.getReadPointer (0) : nullptr;
-        const double fileSr = ctxLoop.fileSr[live] > 1.0 ? ctxLoop.fileSr[live] : 44100.0;
-        const double step = fileSr / getSampleRate();
-        double pos = ctxLoopPos;
-        auto* ml = mainOut.getWritePointer (0);
-        auto* mr = mainOut.getNumChannels() > 1 ? mainOut.getWritePointer (1) : nullptr;
-        for (int i = 0; i < nEq; ++i)
-        {
-            float add = 0.f;
-            if (hatsOn)
-            {
-                if (hw <= 0)
-                {
-                    hat.trigger (hp);
-                    hw = hatPeriod;
-                }
-                add += hat.process() * cg;
-                if (hw > 0)
-                    --hw;
-            }
-            if (cdata != nullptr && cn > 1)
-            {
-                if (pos >= (double) (cn - 1) || pos < 0.0)
-                    pos = 0.0;
-                const int i0 = (int) pos;
-                const float frac = (float) (pos - (double) i0);
-                const int i1 = i0 + 1 < cn ? i0 + 1 : 0;
-                add += (cdata[i0] + frac * (cdata[i1] - cdata[i0])) * cg;
-                pos += step;
-            }
-            ml[i] += add;
-            if (mr != nullptr)
-                mr[i] += add;
-        }
-        hatWait = hw;
-        ctxLoopPos = pos;
-    }
-
     k1x::clipSamples (buffer.getArrayOfWritePointers(), buffer.getNumChannels(), n);
 }
 
@@ -872,7 +816,6 @@ void K1XAudioProcessor::initPatch()
     apvts.state.setProperty (kPatchName, kInitPatch, nullptr);
     for (int s = 0; s < ParamID::slotCount; ++s)
         clearSlotSample (s);
-    clearContextLoop();
 }
 
 bool K1XAudioProcessor::loadSlotSample (int slot, const juce::File& file)
@@ -928,47 +871,6 @@ void K1XAudioProcessor::reloadSlotSamples()
             slotBuf.live.store (next, std::memory_order_release);
         }
     }
-    const auto loopPath = contextLoopPath();
-    if (loopPath.isEmpty())
-        clearContextLoop();
-    else if (! loadContextLoop (juce::File (loopPath)))
-    {
-        const int next = 1 - ctxLoop.live.load (std::memory_order_relaxed);
-        ctxLoop.buf[next].setSize (1, 0);
-        ctxLoop.live.store (next, std::memory_order_release);
-    }
-}
-
-bool K1XAudioProcessor::loadContextLoop (const juce::File& file)
-{
-    juce::AudioFormatManager fm;
-    fm.registerBasicFormats();
-    std::unique_ptr<juce::AudioFormatReader> reader (fm.createReaderFor (file));
-    if (reader == nullptr || reader->lengthInSamples < 2)
-        return false;
-    const int next = 1 - ctxLoop.live.load (std::memory_order_relaxed);
-    const int n = (int) juce::jmin ((juce::int64) reader->lengthInSamples, (juce::int64) 44100 * 32);
-    ctxLoop.buf[next].setSize (1, n, false, false, true);
-    ctxLoop.buf[next].clear();
-    reader->read (&ctxLoop.buf[next], 0, n, 0, true, false);
-    ctxLoop.fileSr[next] = reader->sampleRate > 1.0 ? reader->sampleRate : 44100.0;
-    ctxLoop.live.store (next, std::memory_order_release);
-    apvts.state.setProperty (kCtxLoopPath, file.getFullPathName(), nullptr);
-    return true;
-}
-
-void K1XAudioProcessor::clearContextLoop()
-{
-    const int next = 1 - ctxLoop.live.load (std::memory_order_relaxed);
-    ctxLoop.buf[next].setSize (1, 0);
-    ctxLoop.fileSr[next] = 44100.0;
-    ctxLoop.live.store (next, std::memory_order_release);
-    apvts.state.removeProperty (kCtxLoopPath, nullptr);
-}
-
-juce::String K1XAudioProcessor::contextLoopPath() const
-{
-    return apvts.state.getProperty (kCtxLoopPath).toString();
 }
 
 bool K1XAudioProcessor::loadPatchByName (const juce::String& name)

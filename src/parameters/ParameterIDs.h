@@ -27,8 +27,6 @@ constexpr const char* velAmt     = "velAmt";
 constexpr const char* width      = "width";
 constexpr const char* duckDepth  = "duckDepth";
 constexpr const char* duckTime   = "duckTime";
-constexpr const char* ctxHats    = "ctxHats";
-constexpr const char* ctxHatGain = "ctxHatGain";
 constexpr const char* holdMode   = "holdMode";
 
 // Layer 0 is the kick. Slots 1..3 are optional voices. Kick has no type.

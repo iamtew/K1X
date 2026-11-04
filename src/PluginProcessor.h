@@ -72,9 +72,6 @@ public:
     void clearSlotSample (int slot);
     juce::String slotSamplePath (int slot) const;
     void reloadSlotSamples();
-    bool loadContextLoop (const juce::File& file);
-    void clearContextLoop();
-    juce::String contextLoopPath() const;
 
     // Editor scale (drag the corner). Saved with the session, not with patches.
     float uiScale = 0.85f;
@@ -94,9 +91,6 @@ private:
     std::atomic<float> loopBpm { 140.f };
     std::atomic<bool> loopRestart { false };
     int loopWait = 0;
-    int hatWait = 0;
-    k1x::NoiseVoice hat;
-    double ctxLoopPos = 0.0;
 
     k1x::LayerStack stack;
     k1x::OutputMeter layerMeters[k1x::kMixLayers];
@@ -112,7 +106,6 @@ private:
         std::atomic<int> live { 0 };
     };
     SlotSample slotSamples[ParamID::slotCount];
-    SlotSample ctxLoop;
     k1x::StereoWidth stereoWidth;
     k1x::PostFx postFx;
     k1x::ParametricEq postEq;

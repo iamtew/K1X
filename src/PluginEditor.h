@@ -50,7 +50,6 @@ private:
     void chooseExport();
     void chooseImport();
     void chooseSlotSample();
-    void chooseContextLoop();
     void setEditorPage (int page);
     void selectLayer (int layer);
     void selectMix();
@@ -267,9 +266,6 @@ private:
     juce::ToggleButton playBtn { "Play" };
     juce::ToggleButton loopBtn { "Loop" };
     juce::TextEditor bpmBox;
-    juce::ToggleButton hatsBtn { "Hats" };
-    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> hatsAtt;
-    juce::ToggleButton loopLoadBtn { "Bed" };
     juce::ToggleButton eqBtn { "EQ" };
     juce::ToggleButton exportBtn { "Export WAV" };
     juce::ComboBox wavSrBox;
@@ -287,6 +283,7 @@ private:
     std::unique_ptr<juce::FileChooser> chooser;
     juce::Image logo;
     bool waveDirty = true;
+    bool standalone = false;
     juce::TooltipWindow tip { this };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (K1XAudioProcessorEditor)

@@ -10,7 +10,7 @@
 namespace
 {
 constexpr int kEditorW = 720;
-constexpr int kEditorH = 554;
+constexpr int kEditorH = 530;
 constexpr const char* kPageNames[] = { "Main", "Effects" };
 constexpr int kPageCount = 2;
 constexpr int kPad = 8;
@@ -985,6 +985,7 @@ K1XAudioProcessorEditor::K1XAudioProcessorEditor (K1XAudioProcessor& p)
     content.addAndMakeVisible (pageBar);
     content.addAndMakeVisible (volumeStrip);
 
+    standalone = juce::PluginHostType::getPluginLoadedAs() == juce::AudioProcessor::wrapperType_Standalone;
     playBtn.setClickingTogglesState (false);
     playBtn.onClick = [this]
     {
@@ -1022,29 +1023,6 @@ K1XAudioProcessorEditor::K1XAudioProcessorEditor (K1XAudioProcessor& p)
     content.addAndMakeVisible (playBtn);
     content.addAndMakeVisible (loopBtn);
     content.addAndMakeVisible (bpmBox);
-    hatsBtn.setClickingTogglesState (true);
-    hatsAtt = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (
-        proc.apvts, ParamID::ctxHats, hatsBtn);
-    content.addAndMakeVisible (hatsBtn);
-    loopLoadBtn.setClickingTogglesState (false);
-    loopLoadBtn.onClick = [this]
-    {
-        juce::PopupMenu m;
-        m.addItem (1, "Load loop...");
-        m.addItem (2, "Clear", proc.contextLoopPath().isNotEmpty());
-        juce::Component::SafePointer<K1XAudioProcessorEditor> safe (this);
-        m.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (&loopLoadBtn),
-                         [safe] (int result)
-                         {
-                             if (safe == nullptr || result <= 0)
-                                 return;
-                             if (result == 1)
-                                 safe->chooseContextLoop();
-                             else
-                                 safe->proc.clearContextLoop();
-                         });
-    };
-    content.addAndMakeVisible (loopLoadBtn);
     content.addAndMakeVisible (exportBtn);
     wavSrBox.addItem ("44.1", 1);
     wavSrBox.addItem ("48", 2);
@@ -1060,6 +1038,9 @@ K1XAudioProcessorEditor::K1XAudioProcessorEditor (K1XAudioProcessor& p)
     wavNormBtn.setToggleState (proc.wavNorm, juce::dontSendNotification);
     wavNormBtn.onClick = [this] { proc.wavNorm = wavNormBtn.getToggleState(); };
     content.addAndMakeVisible (wavNormBtn);
+    playBtn.setVisible (standalone);
+    loopBtn.setVisible (standalone);
+    bpmBox.setVisible (standalone);
 
     eqBtn.setClickingTogglesState (true);
     eqBtn.onClick = [this]
@@ -1284,17 +1265,17 @@ void K1XAudioProcessorEditor::layoutContent()
     tools.removeFromLeft (4);
     holdLabel.setBounds (tools.removeFromLeft (36));
     holdBox.setBounds (tools.removeFromLeft (80).reduced (0, 2));
+    if (standalone)
+    {
+        tools.removeFromLeft (8);
+        playBtn.setBounds (tools.removeFromLeft (56).reduced (0, 2));
+        loopBtn.setBounds (tools.removeFromLeft (52).reduced (0, 2));
+        bpmBox.setBounds (tools.removeFromLeft (44).reduced (0, 4));
+    }
     tools.removeFromLeft (8);
     exportBtn.setBounds (tools.removeFromLeft (88).reduced (0, 2));
     wavSrBox.setBounds (tools.removeFromLeft (56).reduced (0, 2));
     wavNormBtn.setBounds (tools.removeFromLeft (48).reduced (0, 2));
-
-    auto transport = r.removeFromTop (24);
-    playBtn.setBounds (transport.removeFromLeft (56).reduced (0, 2));
-    loopBtn.setBounds (transport.removeFromLeft (52).reduced (0, 2));
-    bpmBox.setBounds (transport.removeFromLeft (44).reduced (0, 2));
-    hatsBtn.setBounds (transport.removeFromLeft (52).reduced (0, 2));
-    loopLoadBtn.setBounds (transport.removeFromLeft (52).reduced (0, 2));
 
     fxPage.setBounds (r);
     auto waveRow = r.removeFromTop (110).reduced (0, 4);
@@ -1311,8 +1292,7 @@ void K1XAudioProcessorEditor::layoutContent()
         const int dw = duckRow.getWidth() / cols;
         knobs[0]->setBounds (duckRow.removeFromLeft (dw));
         knobs[1]->setBounds (duckRow.removeFromLeft (dw));
-        knobs[2]->setBounds (duckRow.removeFromLeft (dw));
-        for (int i = 3; i < knobs.size(); ++i)
+        for (int i = 2; i < knobs.size(); ++i)
             knobs[i]->setBounds ({});
     }
     layerMix.setBounds (r);
@@ -1427,7 +1407,6 @@ void K1XAudioProcessorEditor::bindKnobs()
     {
         add (ParamID::duckDepth, "Duck");
         add (ParamID::duckTime, "Time");
-        add (ParamID::ctxHatGain, "Hats");
     }
     else if (! mixView && selectedLayer == 0)
     {
@@ -1853,25 +1832,6 @@ void K1XAudioProcessorEditor::chooseImport()
                                   return;
                               safe->proc.importPatch (file);
                               safe->refreshPatchName();
-                          });
-}
-
-void K1XAudioProcessorEditor::chooseContextLoop()
-{
-    chooser = std::make_unique<juce::FileChooser> (
-        "Load loop",
-        juce::File::getSpecialLocation (juce::File::userDocumentsDirectory),
-        "*.wav;*.aif;*.aiff;*.flac");
-    juce::Component::SafePointer<K1XAudioProcessorEditor> safe (this);
-    chooser->launchAsync (juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
-                          [safe] (const juce::FileChooser& c)
-                          {
-                              if (safe == nullptr)
-                                  return;
-                              auto file = c.getResult();
-                              if (file.getFullPathName().isEmpty())
-                                  return;
-                              safe->proc.loadContextLoop (file);
                           });
 }
 
