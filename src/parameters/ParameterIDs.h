@@ -46,6 +46,13 @@ inline constexpr const char* lyBassHp[slotCount]    = { "ly1BassHp", "ly2BassHp"
 inline constexpr const char* lyNoiseDecay[slotCount] = { "ly1NoiseDecay", "ly2NoiseDecay", "ly3NoiseDecay" };
 inline constexpr const char* lyNoiseHp[slotCount]    = { "ly1NoiseHp", "ly2NoiseHp", "ly3NoiseHp" };
 inline constexpr const char* lyNoiseLp[slotCount]    = { "ly1NoiseLp", "ly2NoiseLp", "ly3NoiseLp" };
+inline constexpr const char* lyNoiseType[slotCount]  = { "ly1NoiseType", "ly2NoiseType", "ly3NoiseType" };
+inline constexpr const char* lyNoiseLen[slotCount]   = { "ly1NoiseLen", "ly2NoiseLen", "ly3NoiseLen" };
+inline constexpr const char* lyNoiseAtk[slotCount]   = { "ly1NoiseAtk", "ly2NoiseAtk", "ly3NoiseAtk" };
+
+inline constexpr int noiseWhite = 0;
+inline constexpr int noisePink = 1;
+inline constexpr int noiseBrown = 2;
 
 inline constexpr const char* lyClickPitch[slotCount] = { "ly1ClickPitch", "ly2ClickPitch", "ly3ClickPitch" };
 inline constexpr const char* lyClickDecay[slotCount] = { "ly1ClickDecay", "ly2ClickDecay", "ly3ClickDecay" };

@@ -156,7 +156,7 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout
     }
 
     auto semiR = NormalisableRange<float> (-24.f, 12.f, 1.f);
-    auto delayR = NormalisableRange<float> (0.f, 40.f, 0.1f);
+    auto delayR = NormalisableRange<float> (0.f, 80.f, 0.1f);
     auto clickMsR = NormalisableRange<float> (0.5f, 40.f, 0.1f, 0.4f);
     auto noiseHpR = NormalisableRange<float> (80.f, 8000.f, 1.f, 0.3f);
     auto noiseLpR = NormalisableRange<float> (200.f, 16000.f, 1.f, 0.3f);
@@ -165,6 +165,8 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout
     auto sweepDropR = NormalisableRange<float> (0.f, 5.f, 0.01f);
     auto sweepDecR = NormalisableRange<float> (0.02f, 0.5f, 0.001f, 0.4f);
     auto noiseDecR = NormalisableRange<float> (0.02f, 1.5f, 0.001f, 0.4f);
+    auto noiseLenR = NormalisableRange<float> (0.f, 400.f, 1.f, 0.4f);
+    auto noiseAtkR = NormalisableRange<float> (0.f, 30.f, 0.1f);
     const char* slotName[] = { "L2", "L3", "L4" };
 
     auto msAttrs = [] (NormalisableRange<float> range)
@@ -220,6 +222,26 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout
             ParameterID { ParamID::lyNoiseHp[s], 1 }, who + " Noise HPF", noiseHpR, 800.f, hzAttrs (noiseHpR)));
         layout.add (std::make_unique<AudioParameterFloat> (
             ParameterID { ParamID::lyNoiseLp[s], 1 }, who + " Noise LPF", noiseLpR, 6000.f, hzAttrs (noiseLpR)));
+        layout.add (std::make_unique<AudioParameterChoice> (
+            ParameterID { ParamID::lyNoiseType[s], 1 }, who + " Noise Type",
+            StringArray { "White", "Pink", "Brown" }, 0));
+        layout.add (std::make_unique<AudioParameterFloat> (
+            ParameterID { ParamID::lyNoiseLen[s], 1 }, who + " Noise Length", noiseLenR, 0.f,
+            AudioParameterFloatAttributes()
+                .withStringFromValueFunction ([] (float v, int)
+                {
+                    if (v <= 0.f)
+                        return String ("Auto");
+                    return String (roundToInt (v)) + " ms";
+                })
+                .withValueFromStringFunction ([noiseLenR] (const String& t)
+                {
+                    if (t.containsIgnoreCase ("auto"))
+                        return 0.f;
+                    return jlimit (noiseLenR.start, noiseLenR.end, t.getFloatValue());
+                })));
+        layout.add (std::make_unique<AudioParameterFloat> (
+            ParameterID { ParamID::lyNoiseAtk[s], 1 }, who + " Noise Attack", noiseAtkR, 0.f, msAttrs (noiseAtkR)));
         layout.add (std::make_unique<AudioParameterFloat> (
             ParameterID { ParamID::lyClickPitch[s], 1 }, who + " Click Pitch", clickHzR, 2500.f, hzAttrs (clickHzR)));
         layout.add (std::make_unique<AudioParameterFloat> (

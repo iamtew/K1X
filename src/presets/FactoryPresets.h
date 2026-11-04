@@ -359,7 +359,7 @@ constexpr bool factoryBankOk()
             if (L.type == 0)
                 continue;
             if (L.type < 1 || L.type > 4 || ! factoryInRange (L.gain, 0.f, 1.f)
-                || ! factoryInRange (L.delayMs, 0.f, 40.f))
+                || ! factoryInRange (L.delayMs, 0.f, 80.f))
                 return false;
             if (L.type == 1 && (! factoryInRange (L.a, -24.f, 12.f) || ! factoryInRange (L.b, 0.05f, 2.f)
                                 || ! factoryInRange (L.c, 0.f, 1.f) || ! factoryInRange (L.d, 10.f, 200.f)))
