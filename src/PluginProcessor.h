@@ -52,6 +52,7 @@ public:
     k1x::OutputMeter& dryMeter() { return postFx.dryMeter; }
     k1x::OutputMeter& fxMeter() { return postFx.fxMeter; }
     k1x::OutputMeter& layerMeter (int layer) { return layerMeters[layer]; }
+    k1x::EqAnalyser& layerAnalyser (int layer) { return layerAnalysers[layer]; }
 
     juce::File patchesDir() const;
     juce::StringArray patchNames() const;
@@ -74,6 +75,9 @@ private:
 
     k1x::LayerStack stack;
     k1x::OutputMeter layerMeters[k1x::kMixLayers];
+    k1x::ParametricEq layerEq[k1x::kMixLayers];
+    k1x::EqAnalyser layerAnalysers[k1x::kMixLayers];
+    juce::AudioBuffer<float> layerScratch;
     k1x::PostFx postFx;
     k1x::ParametricEq postEq;
     k1x::EqAnalyser analyser;

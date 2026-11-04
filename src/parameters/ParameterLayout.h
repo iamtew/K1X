@@ -233,5 +233,24 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout
             ParameterID { ParamID::lySweepDecay[s], 1 }, who + " Sweep Decay", sweepDecR, 0.08f, pct (sweepDecR)));
     }
 
+    const char* eqWho[] = { "Kick", "L2", "L3", "L4" };
+    for (int layer = 0; layer < ParamID::layerCount; ++layer)
+    {
+        const String who (eqWho[layer]);
+        addOn (ParamID::lyEqOn[layer], (who + " EQ On").toRawUTF8());
+        for (int b = 0; b < ParamID::eqBandCount; ++b)
+        {
+            const String n = who + " EQ " + String (b + 1);
+            layout.add (std::make_unique<AudioParameterChoice> (
+                ParameterID { ParamID::lyEqType[layer][b], 1 }, n + " Type", eqTypes, 1));
+            layout.add (std::make_unique<AudioParameterFloat> (
+                ParameterID { ParamID::lyEqFreq[layer][b], 1 }, n + " Freq", eqHz, eqHzDef[b]));
+            layout.add (std::make_unique<AudioParameterFloat> (
+                ParameterID { ParamID::lyEqGain[layer][b], 1 }, n + " Gain", eqGain, 0.f));
+            layout.add (std::make_unique<AudioParameterFloat> (
+                ParameterID { ParamID::lyEqQ[layer][b], 1 }, n + " Q", eqQ, 0.7f));
+        }
+    }
+
     return layout;
 }

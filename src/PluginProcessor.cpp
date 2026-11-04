@@ -121,6 +121,15 @@ void K1XAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     stack.prepare (sampleRate);
     for (auto& m : layerMeters)
         m.prepare (sampleRate);
+    // Host blocks stay within the prepared size. 8192 covers a later, larger callback
+    // without allocating on the audio thread.
+    const int cap = juce::jmax (samplesPerBlock, 8192);
+    layerScratch.setSize (k1x::kMixLayers, cap, false, false, true);
+    for (int i = 0; i < k1x::kMixLayers; ++i)
+    {
+        layerEq[i].prepare (sampleRate, cap, 1);
+        layerAnalysers[i].prepare (sampleRate);
+    }
     analyser.prepare (sampleRate);
     meter.prepare (sampleRate);
     const int ch = juce::jmax (2, getTotalNumOutputChannels());
@@ -238,14 +247,43 @@ void K1XAudioProcessor::renderShot (float* dest, int n, double sampleRate) const
     k1x::LayerStack local;
     local.prepare (sampleRate);
     local.trigger (kickP, slots);
-    const float master = kickP.level;
+
+    std::vector<float> chan[k1x::kMixLayers];
+    for (int L = 0; L < k1x::kMixLayers; ++L)
+        chan[L].assign ((size_t) n, 0.f);
     for (int i = 0; i < n; ++i)
     {
         float layer[k1x::kMixLayers];
         local.tickInto (layer);
+        for (int L = 0; L < k1x::kMixLayers; ++L)
+            chan[L][(size_t) i] = layer[L];
+    }
+
+    const int block = 512;
+    for (int L = 0; L < k1x::kMixLayers; ++L)
+    {
+        k1x::ParametricEq eq;
+        eq.prepare (sampleRate, block, 1);
+        k1x::EqBandParam bands[k1x::eqBandCount];
+        const auto ids = k1x::layerEqIds (L);
+        k1x::readEqBands (apvts, ids, bands);
+        const bool on = k1x::eqEnabled (apvts, ids.on);
+        for (int pos = 0; pos < n; )
+        {
+            const int nThis = juce::jmin (block, n - pos);
+            float* ptrs[1] = { chan[L].data() + pos };
+            juce::AudioBuffer<float> view (ptrs, 1, nThis);
+            eq.process (view, on, bands);
+            pos += nThis;
+        }
+    }
+
+    const float master = kickP.level;
+    for (int i = 0; i < n; ++i)
+    {
         float acc = 0.f;
         for (int L = 0; L < k1x::kMixLayers; ++L)
-            acc += layer[L] * amp[L];
+            acc += chan[L][(size_t) i] * amp[L];
         dest[i] = acc * master;
     }
 }
@@ -279,16 +317,32 @@ void K1XAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mi
     fillAmps (amp);
     auto* l = buffer.getWritePointer (0);
     const int n = buffer.getNumSamples();
-    const float g = kickP.level;
-    float peak[k1x::kMixLayers] = {};
-    for (int i = 0; i < n; ++i)
+    const int nEq = juce::jmin (n, layerScratch.getNumSamples());
+    for (int i = 0; i < nEq; ++i)
     {
         float layer[k1x::kMixLayers];
         stack.tickInto (layer);
+        for (int L = 0; L < k1x::kMixLayers; ++L)
+            layerScratch.setSample (L, i, layer[L]);
+    }
+    for (int L = 0; L < k1x::kMixLayers; ++L)
+    {
+        float* ptrs[1] = { layerScratch.getWritePointer (L) };
+        juce::AudioBuffer<float> view (ptrs, 1, nEq);
+        k1x::EqBandParam bands[k1x::eqBandCount];
+        const auto ids = k1x::layerEqIds (L);
+        k1x::readEqBands (apvts, ids, bands);
+        layerEq[L].process (view, k1x::eqEnabled (apvts, ids.on), bands);
+        layerAnalysers[L].push (view);
+    }
+    const float g = kickP.level;
+    float peak[k1x::kMixLayers] = {};
+    for (int i = 0; i < nEq; ++i)
+    {
         float acc = 0.f;
         for (int L = 0; L < k1x::kMixLayers; ++L)
         {
-            const float y = layer[L] * amp[L];
+            const float y = layerScratch.getSample (L, i) * amp[L];
             acc += y;
             const float a = std::abs (y);
             if (a > peak[L])
@@ -296,6 +350,8 @@ void K1XAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mi
         }
         l[i] = acc * g;
     }
+    for (int i = nEq; i < n; ++i)
+        l[i] = 0.f;
     for (int L = 0; L < k1x::kMixLayers; ++L)
         layerMeters[L].setPeak (peak[L]);
 

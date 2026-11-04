@@ -46,6 +46,7 @@ private:
     void chooseExport();
     void chooseImport();
     void setEditorPage (int page);
+    void selectLayer (int layer);
     void openPageMenu();
     void cyclePage (int delta);
     void applyPageVisibility();
@@ -202,10 +203,14 @@ private:
     PatchBar pageBar;
     VolumeStrip volumeStrip { *this };
     juce::ToggleButton playBtn { "Play" };
+    juce::ToggleButton eqBtn { "EQ" };
     juce::ToggleButton exportBtn { "Export WAV" };
     FxPage fxPage;
+    EqPage layerEq;
     AboutBox aboutBox;
     int editorPage = 0;
+    int selectedLayer = 0;
+    bool layerEqOpen = false;
     std::unique_ptr<juce::FileChooser> chooser;
     juce::Image logo;
     bool waveDirty = true;

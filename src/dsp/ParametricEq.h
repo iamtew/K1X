@@ -90,7 +90,28 @@ private:
     bool prepared = false;
 };
 
-inline void readEqBands (juce::AudioProcessorValueTreeState& apvts, EqBandParam out[eqBandCount])
+struct EqIdSet
+{
+    const char* on = nullptr;
+    const char* const* type = nullptr;
+    const char* const* freq = nullptr;
+    const char* const* gain = nullptr;
+    const char* const* q = nullptr;
+};
+
+inline EqIdSet postEqIds()
+{
+    return { ParamID::postEqOn, ParamID::postEqType, ParamID::postEqFreq,
+             ParamID::postEqGain, ParamID::postEqQ };
+}
+
+inline EqIdSet layerEqIds (int layer)
+{
+    return { ParamID::lyEqOn[layer], ParamID::lyEqType[layer], ParamID::lyEqFreq[layer],
+             ParamID::lyEqGain[layer], ParamID::lyEqQ[layer] };
+}
+
+inline void readEqBands (const juce::AudioProcessorValueTreeState& apvts, const EqIdSet& ids, EqBandParam out[eqBandCount])
 {
     auto load = [&] (const char* id) -> float
     {
@@ -99,17 +120,27 @@ inline void readEqBands (juce::AudioProcessorValueTreeState& apvts, EqBandParam 
     };
     for (int i = 0; i < eqBandCount; ++i)
     {
-        out[i].type = juce::roundToInt (load (ParamID::postEqType[i]));
-        out[i].hz = load (ParamID::postEqFreq[i]);
-        out[i].gainDb = load (ParamID::postEqGain[i]);
-        out[i].q = load (ParamID::postEqQ[i]);
+        out[i].type = juce::roundToInt (load (ids.type[i]));
+        out[i].hz = load (ids.freq[i]);
+        out[i].gainDb = load (ids.gain[i]);
+        out[i].q = load (ids.q[i]);
     }
 }
 
-inline bool postEqEnabled (juce::AudioProcessorValueTreeState& apvts)
+inline void readEqBands (const juce::AudioProcessorValueTreeState& apvts, EqBandParam out[eqBandCount])
 {
-    auto* v = apvts.getRawParameterValue (ParamID::postEqOn);
+    readEqBands (apvts, postEqIds(), out);
+}
+
+inline bool eqEnabled (const juce::AudioProcessorValueTreeState& apvts, const char* onId)
+{
+    auto* v = apvts.getRawParameterValue (onId);
     return v != nullptr && v->load() >= 0.5f;
+}
+
+inline bool postEqEnabled (const juce::AudioProcessorValueTreeState& apvts)
+{
+    return eqEnabled (apvts, ParamID::postEqOn);
 }
 
 } // namespace k1x

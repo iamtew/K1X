@@ -25,7 +25,18 @@ public:
         resetBtn.onClick = [this] { resetEq(); };
         addAndMakeVisible (resetBtn);
         inspector.bind();
+        spectrum = &proc.eqAnalyser();
         startTimerHz (24);
+    }
+
+    void bindTo (k1x::EqIdSet set, k1x::EqAnalyser& analyser)
+    {
+        ids = set;
+        spectrum = &analyser;
+        eqOnAtt = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (
+            proc.apvts, ids.on, eqOn);
+        inspector.bind();
+        repaint();
     }
 
     ~EqPage() override { stopTimer(); }
@@ -42,6 +53,8 @@ public:
     }
 
     K1XAudioProcessor& proc;
+    k1x::EqIdSet ids = k1x::postEqIds();
+    k1x::EqAnalyser* spectrum = nullptr;
 
 private:
     static const juce::Colour kMetal;
@@ -67,10 +80,10 @@ private:
         repaint();
     }
 
-    const char* typeId (int b) const { return ParamID::postEqType[b]; }
-    const char* freqId (int b) const { return ParamID::postEqFreq[b]; }
-    const char* gainId (int b) const { return ParamID::postEqGain[b]; }
-    const char* qId (int b) const { return ParamID::postEqQ[b]; }
+    const char* typeId (int b) const { return ids.type[b]; }
+    const char* freqId (int b) const { return ids.freq[b]; }
+    const char* gainId (int b) const { return ids.gain[b]; }
+    const char* qId (int b) const { return ids.q[b]; }
 
     void setParam (const char* id, float v)
     {
@@ -129,7 +142,7 @@ private:
 
     void resetEq()
     {
-        resetParamId (ParamID::postEqOn);
+        resetParamId (ids.on);
         for (int b = 0; b < k1x::eqBandCount; ++b)
         {
             resetParamId (typeId (b));
@@ -451,7 +464,8 @@ private:
             const int n = juce::jmax (2, (int) r.getWidth());
             if ((int) specDb.size() != n)
                 specDb.resize ((size_t) n);
-            owner.proc.eqAnalyser().copyLogDb (specDb.data(), n);
+            if (owner.spectrum != nullptr)
+                owner.spectrum->copyLogDb (specDb.data(), n);
             juce::Path spec;
             spec.startNewSubPath (r.getX(), r.getBottom());
             for (int i = 0; i < n; ++i)
@@ -466,7 +480,7 @@ private:
             g.fillPath (spec);
 
             k1x::EqBandParam params[k1x::eqBandCount];
-            k1x::readEqBands (owner.proc.apvts, params);
+            k1x::readEqBands (owner.proc.apvts, owner.ids, params);
             k1x::Biquad bq[k1x::eqBandCount];
             for (int b = 0; b < k1x::eqBandCount; ++b)
                 bq[b] = k1x::eqBiquad (params[b].type, sr(), params[b].hz, params[b].q, params[b].gainDb);
@@ -497,7 +511,7 @@ private:
 
             juce::Path sum;
             juce::Path fill;
-            const bool on = k1x::postEqEnabled (owner.proc.apvts);
+            const bool on = k1x::eqEnabled (owner.proc.apvts, owner.ids.on);
             for (int i = 0; i < n; ++i)
             {
                 const float x01 = (float) i / (float) (n - 1);
@@ -586,7 +600,7 @@ private:
         void mouseDown (const juce::MouseEvent& e) override
         {
             k1x::EqBandParam params[k1x::eqBandCount];
-            k1x::readEqBands (owner.proc.apvts, params);
+            k1x::readEqBands (owner.proc.apvts, owner.ids, params);
             k1x::Biquad bq[k1x::eqBandCount];
             for (int b = 0; b < k1x::eqBandCount; ++b)
                 bq[b] = k1x::eqBiquad (params[b].type, sr(), params[b].hz, params[b].q, params[b].gainDb);
@@ -632,7 +646,7 @@ private:
         void mouseDoubleClick (const juce::MouseEvent& e) override
         {
             k1x::EqBandParam params[k1x::eqBandCount];
-            k1x::readEqBands (owner.proc.apvts, params);
+            k1x::readEqBands (owner.proc.apvts, owner.ids, params);
             k1x::Biquad bq[k1x::eqBandCount];
             for (int b = 0; b < k1x::eqBandCount; ++b)
                 bq[b] = k1x::eqBiquad (params[b].type, sr(), params[b].hz, params[b].q, params[b].gainDb);
@@ -645,7 +659,7 @@ private:
         void mouseWheelMove (const juce::MouseEvent& e, const juce::MouseWheelDetails& w) override
         {
             k1x::EqBandParam params[k1x::eqBandCount];
-            k1x::readEqBands (owner.proc.apvts, params);
+            k1x::readEqBands (owner.proc.apvts, owner.ids, params);
             k1x::Biquad bq[k1x::eqBandCount];
             for (int b = 0; b < k1x::eqBandCount; ++b)
                 bq[b] = k1x::eqBiquad (params[b].type, sr(), params[b].hz, params[b].q, params[b].gainDb);

@@ -2,6 +2,8 @@
 
 namespace ParamID
 {
+inline constexpr int eqBandCount = 5;
+
 constexpr const char* tune       = "tune";
 constexpr const char* pitchDrop  = "pitchDrop";
 constexpr const char* pitchDecay = "pitchDecay";
@@ -53,6 +55,32 @@ inline constexpr const char* lySweepStart[slotCount] = { "ly1SweepStart", "ly2Sw
 inline constexpr const char* lySweepDrop[slotCount]  = { "ly1SweepDrop", "ly2SweepDrop", "ly3SweepDrop" };
 inline constexpr const char* lySweepDecay[slotCount] = { "ly1SweepDecay", "ly2SweepDecay", "ly3SweepDecay" };
 
+inline constexpr const char* lyEqOn[layerCount] = { "ly0EqOn", "ly1EqOn", "ly2EqOn", "ly3EqOn" };
+inline constexpr const char* lyEqType[layerCount][eqBandCount] = {
+    { "ly0Eq1Type", "ly0Eq2Type", "ly0Eq3Type", "ly0Eq4Type", "ly0Eq5Type" },
+    { "ly1Eq1Type", "ly1Eq2Type", "ly1Eq3Type", "ly1Eq4Type", "ly1Eq5Type" },
+    { "ly2Eq1Type", "ly2Eq2Type", "ly2Eq3Type", "ly2Eq4Type", "ly2Eq5Type" },
+    { "ly3Eq1Type", "ly3Eq2Type", "ly3Eq3Type", "ly3Eq4Type", "ly3Eq5Type" }
+};
+inline constexpr const char* lyEqFreq[layerCount][eqBandCount] = {
+    { "ly0Eq1Freq", "ly0Eq2Freq", "ly0Eq3Freq", "ly0Eq4Freq", "ly0Eq5Freq" },
+    { "ly1Eq1Freq", "ly1Eq2Freq", "ly1Eq3Freq", "ly1Eq4Freq", "ly1Eq5Freq" },
+    { "ly2Eq1Freq", "ly2Eq2Freq", "ly2Eq3Freq", "ly2Eq4Freq", "ly2Eq5Freq" },
+    { "ly3Eq1Freq", "ly3Eq2Freq", "ly3Eq3Freq", "ly3Eq4Freq", "ly3Eq5Freq" }
+};
+inline constexpr const char* lyEqGain[layerCount][eqBandCount] = {
+    { "ly0Eq1Gain", "ly0Eq2Gain", "ly0Eq3Gain", "ly0Eq4Gain", "ly0Eq5Gain" },
+    { "ly1Eq1Gain", "ly1Eq2Gain", "ly1Eq3Gain", "ly1Eq4Gain", "ly1Eq5Gain" },
+    { "ly2Eq1Gain", "ly2Eq2Gain", "ly2Eq3Gain", "ly2Eq4Gain", "ly2Eq5Gain" },
+    { "ly3Eq1Gain", "ly3Eq2Gain", "ly3Eq3Gain", "ly3Eq4Gain", "ly3Eq5Gain" }
+};
+inline constexpr const char* lyEqQ[layerCount][eqBandCount] = {
+    { "ly0Eq1Q", "ly0Eq2Q", "ly0Eq3Q", "ly0Eq4Q", "ly0Eq5Q" },
+    { "ly1Eq1Q", "ly1Eq2Q", "ly1Eq3Q", "ly1Eq4Q", "ly1Eq5Q" },
+    { "ly2Eq1Q", "ly2Eq2Q", "ly2Eq3Q", "ly2Eq4Q", "ly2Eq5Q" },
+    { "ly3Eq1Q", "ly3Eq2Q", "ly3Eq3Q", "ly3Eq4Q", "ly3Eq5Q" }
+};
+
 constexpr const char* fxDry      = "fxDry";
 constexpr const char* fxWet      = "fxWet";
 constexpr const char* fxDstOn    = "fxDstOn";
@@ -74,7 +102,6 @@ constexpr const char* fxRevPredelay = "fxRevPredelay";
 constexpr const char* fxRevSync     = "fxRevSync";
 constexpr const char* fxRevDiv      = "fxRevDiv";
 
-inline constexpr int eqBandCount = 5;
 inline constexpr const char* postEqOn = "postEqOn";
 inline constexpr const char* postEqType[eqBandCount] = {
     "postEq1Type", "postEq2Type", "postEq3Type", "postEq4Type", "postEq5Type"

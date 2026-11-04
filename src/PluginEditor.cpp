@@ -35,6 +35,22 @@ constexpr int kMenuExport = 4;
 constexpr int kMenuImport = 5;
 constexpr int kMenuFactory = 1000;
 constexpr int kMenuUser = 10000;
+
+template <typename Fn>
+void eachLayerEqId (Fn&& fn)
+{
+    for (int layer = 0; layer < ParamID::layerCount; ++layer)
+    {
+        fn (ParamID::lyEqOn[layer]);
+        for (int b = 0; b < ParamID::eqBandCount; ++b)
+        {
+            fn (ParamID::lyEqType[layer][b]);
+            fn (ParamID::lyEqFreq[layer][b]);
+            fn (ParamID::lyEqGain[layer][b]);
+            fn (ParamID::lyEqQ[layer][b]);
+        }
+    }
+}
 } // namespace
 
 K1XAudioProcessorEditor::Knob::Knob (juce::AudioProcessorValueTreeState& st,
@@ -752,7 +768,7 @@ void K1XAudioProcessorEditor::VolumeStrip::refresh()
 }
 
 K1XAudioProcessorEditor::K1XAudioProcessorEditor (K1XAudioProcessor& p)
-    : juce::AudioProcessorEditor (p), proc (p), fxPage (p)
+    : juce::AudioProcessorEditor (p), proc (p), fxPage (p), layerEq (p)
 {
     setLookAndFeel (&panelLnF);
     setOpaque (true);
@@ -825,8 +841,18 @@ K1XAudioProcessorEditor::K1XAudioProcessorEditor (K1XAudioProcessor& p)
     playBtn.setVisible (standalone);
     exportBtn.setVisible (standalone);
 
+    eqBtn.setClickingTogglesState (true);
+    eqBtn.onClick = [this]
+    {
+        layerEqOpen = eqBtn.getToggleState();
+        applyPageVisibility();
+    };
+    content.addAndMakeVisible (eqBtn);
+    selectLayer (0);
+
     content.addAndMakeVisible (fxPage);
     fxPage.setVisible (false);
+    content.addChildComponent (layerEq);
 
     content.addChildComponent (aboutBox);
     aboutBox.setVisible (false);
@@ -835,6 +861,7 @@ K1XAudioProcessorEditor::K1XAudioProcessorEditor (K1XAudioProcessor& p)
                       ParamID::punch, ParamID::decay, ParamID::drive, ParamID::hpf, ParamID::tone,
                       ParamID::lo, ParamID::hi, ParamID::level, ParamID::length, ParamID::style })
         proc.apvts.addParameterListener (id, this);
+    eachLayerEqId ([this] (const char* id) { proc.apvts.addParameterListener (id, this); });
 
     baseW = kEditorW;
     baseH = kEditorH;
@@ -858,6 +885,7 @@ K1XAudioProcessorEditor::~K1XAudioProcessorEditor()
                       ParamID::punch, ParamID::decay, ParamID::drive, ParamID::hpf, ParamID::tone,
                       ParamID::lo, ParamID::hi, ParamID::level, ParamID::length, ParamID::style })
         proc.apvts.removeParameterListener (id, this);
+    eachLayerEqId ([this] (const char* id) { proc.apvts.removeParameterListener (id, this); });
     setLookAndFeel (nullptr);
 }
 
@@ -946,6 +974,7 @@ void K1XAudioProcessorEditor::layoutContent()
     patchBar.setBounds (title.reduced (4, 4));
 
     auto tools = r.removeFromTop (28);
+    eqBtn.setBounds (tools.removeFromRight (52).reduced (0, 2));
     styleLabel.setBounds (tools.removeFromLeft (44));
     styleBox.setBounds (tools.removeFromLeft (80).reduced (0, 2));
     tools.removeFromLeft (8);
@@ -961,6 +990,7 @@ void K1XAudioProcessorEditor::layoutContent()
     fxPage.setBounds (r);
     wave.setBounds (r.removeFromTop (110).reduced (0, 4));
     r.removeFromTop (6);
+    layerEq.setBounds (r);
     const int cols = 6;
     const int rows = 2;
     const int cellW = r.getWidth() / cols;
@@ -1007,12 +1037,21 @@ void K1XAudioProcessorEditor::openPageMenu()
                      });
 }
 
+void K1XAudioProcessorEditor::selectLayer (int layer)
+{
+    selectedLayer = juce::jlimit (0, ParamID::layerCount - 1, layer);
+    layerEq.bindTo (k1x::layerEqIds (selectedLayer), proc.layerAnalyser (selectedLayer));
+}
+
 void K1XAudioProcessorEditor::applyPageVisibility()
 {
     const bool main = editorPage == 0;
+    const bool showEq = main && layerEqOpen;
     wave.setVisible (main);
     for (auto* k : knobs)
-        k->setVisible (main);
+        k->setVisible (main && ! layerEqOpen);
+    layerEq.setVisible (showEq);
+    eqBtn.setVisible (main);
     fxPage.setVisible (! main);
 }
 
