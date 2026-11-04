@@ -489,6 +489,9 @@ void K1XAudioProcessorEditor::WaveView::paint (juce::Graphics& g)
 
     auto inner = r.reduced (6.f, 4.f);
     auto ruler = inner.removeFromTop (14.f);
+    constexpr float kPreMs = 80.f;
+    const int nOn = (int) onsets.size();
+    auto strip = inner.removeFromBottom (12.f + (float) juce::jmax (1, nOn) * 7.f);
 
     if (durationSec > 0.f)
     {
@@ -562,6 +565,48 @@ void K1XAudioProcessorEditor::WaveView::paint (juce::Graphics& g)
             g.setColour (tr.colour.withAlpha (0.18f));
             g.drawLine (ax, inner.getY(), ax, inner.getBottom(), 1.f);
         }
+    }
+
+    g.setColour (kMetal.withAlpha (0.35f));
+    g.drawLine (strip.getX(), strip.getY(), strip.getRight(), strip.getY(), 1.f);
+    g.setFont (boldFont (8.f));
+    g.setColour (kMetal.withAlpha (0.7f));
+    g.drawText ("0", strip.removeFromLeft (10.f), juce::Justification::centredLeft, false);
+    g.drawText ("80 ms", strip.removeFromRight (36.f), juce::Justification::centredRight, false);
+
+    bool anySolo = false;
+    for (const auto& o : onsets)
+        if (o.solo)
+            anySolo = true;
+
+    const float laneH = nOn > 0 ? (strip.getHeight() - 2.f) / (float) nOn : strip.getHeight();
+    for (int i = 0; i < nOn; ++i)
+    {
+        const auto& o = onsets[(size_t) i];
+        auto lane = juce::Rectangle<float> (strip.getX(), strip.getY() + 1.f + (float) i * laneH,
+                                           strip.getWidth(), laneH - 1.f);
+        const float x0 = lane.getX() + juce::jlimit (0.f, 1.f, o.delayMs / kPreMs) * lane.getWidth();
+        const float span = juce::jmax (3.f, juce::jlimit (0.f, 1.f, o.attackMs / kPreMs) * lane.getWidth());
+        auto bar = juce::Rectangle<float> (x0, lane.getY() + 1.f, span, juce::jmax (3.f, lane.getHeight() - 2.f));
+        const bool hear = ! o.mute && (! anySolo || o.solo);
+        float a = hear ? 0.9f : 0.22f;
+        g.setColour (o.colour.withAlpha (a));
+        g.fillRoundedRectangle (bar, 1.5f);
+        if (o.solo)
+        {
+            g.setColour (kWhite.withAlpha (0.9f));
+            g.drawRoundedRectangle (bar.expanded (0.5f), 1.5f, 1.f);
+        }
+        g.setColour (hear ? o.colour : o.colour.withAlpha (0.4f));
+        g.drawText (juce::String::charToString ((juce::juce_wchar) o.letter),
+                    juce::Rectangle<float> (bar.getRight() + 2.f, lane.getY(), 12.f, lane.getHeight()),
+                    juce::Justification::centredLeft, false);
+        if (o.mute)
+            g.drawText ("M", juce::Rectangle<float> (lane.getRight() - 12.f, lane.getY(), 12.f, lane.getHeight()),
+                        juce::Justification::centred, false);
+        else if (o.solo)
+            g.drawText ("S", juce::Rectangle<float> (lane.getRight() - 12.f, lane.getY(), 12.f, lane.getHeight()),
+                        juce::Justification::centred, false);
     }
 }
 
@@ -1071,6 +1116,45 @@ void K1XAudioProcessorEditor::rebuildWave()
         proc.renderLayerChans (chan, fullN, 44100.0);
         downsample (storage[selectedLayer].data(), last, layerColour (slotType (selectedLayer - 1)), 0.7f, 0.f);
     }
+
+    auto rawf = [this] (const char* id) -> float
+    {
+        if (auto* v = proc.apvts.getRawParameterValue (id))
+            return v->load();
+        return 0.f;
+    };
+    auto attackMsFor = [&] (int layer) -> float
+    {
+        if (layer == 0)
+            return k1x::punchToAttackMs (proc.currentParams().punch);
+        const int s = layer - 1;
+        const int type = slotType (s);
+        if (type == ParamID::layerBass)
+            return rawf (ParamID::lyBassAtk[s]);
+        if (type == ParamID::layerNoise)
+            return rawf (ParamID::lyNoiseAtk[s]);
+        if (type == ParamID::layerClick)
+            return rawf (ParamID::lyClickAtk[s]);
+        if (type == ParamID::layerSweep)
+            return rawf (ParamID::lySweepAtk[s]);
+        return 0.f;
+    };
+    wave.onsets.clear();
+    auto pushOnset = [&] (int layer, int type)
+    {
+        K1XAudioProcessorEditor::WaveView::Onset o;
+        o.colour = layer == 0 ? kOrange : layerColour (type);
+        o.letter = layerLetter (layer == 0 ? 0 : type)[0];
+        o.delayMs = rawf (ParamID::lyDelay[layer]);
+        o.attackMs = attackMsFor (layer);
+        o.mute = rawf (ParamID::lyMute[layer]) >= 0.5f;
+        o.solo = rawf (ParamID::lySolo[layer]) >= 0.5f;
+        wave.onsets.push_back (o);
+    };
+    pushOnset (0, ParamID::layerOff);
+    for (int s = 0; s < ParamID::slotCount; ++s)
+        if (slotType (s) != ParamID::layerOff)
+            pushOnset (ParamID::layerOfSlot (s), slotType (s));
     wave.repaint();
 }
 

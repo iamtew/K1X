@@ -102,6 +102,16 @@ private:
         };
         std::vector<Trace> traces;
         float durationSec = 0.f;
+        struct Onset
+        {
+            juce::Colour colour;
+            char letter = 'K';
+            float delayMs = 0.f;
+            float attackMs = 0.f;
+            bool mute = false;
+            bool solo = false;
+        };
+        std::vector<Onset> onsets;
     };
 
     struct LayerRail : public juce::Component

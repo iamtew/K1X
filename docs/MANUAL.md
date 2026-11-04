@@ -19,7 +19,7 @@ Kick one-shot (909 default). MIDI note-on retriggers and sets body pitch from th
 
 ## Layers
 
-The rail next to the waveform adds Bass, Noise, Click, or Sweep on top of the kick. Each layer has gain/mute/solo/phase on Mix, a **Delay / Pre** (0–80 ms) before the hit, and its own EQ. Shared on extra voices:
+The rail next to the waveform adds Bass, Noise, Click, or Sweep on top of the kick. Each layer has gain/mute/solo/phase on Mix, a **Delay / Pre** (0–80 ms) before the hit, and its own EQ. A strip under the wave is always 0–80 ms: onset, attack length, mute (M) and solo (S). Shared on extra voices:
 
 - **Length** — how long the voice may speak (ms). Auto follows Decay, or the global Length snap when that is not Free.
 - **Attack** — fade-in after Pre (0–30 ms).
