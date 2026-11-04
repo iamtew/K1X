@@ -1,4 +1,5 @@
 #include "PluginEditor.h"
+#include "dsp/WavExport.h"
 #include "presets/FactoryPresets.h"
 #include "ui/VersionCompare.h"
 
@@ -1008,10 +1009,23 @@ K1XAudioProcessorEditor::K1XAudioProcessorEditor (K1XAudioProcessor& p)
     content.addAndMakeVisible (loopBtn);
     content.addAndMakeVisible (bpmBox);
     content.addAndMakeVisible (exportBtn);
+    wavSrBox.addItem ("44.1", 1);
+    wavSrBox.addItem ("48", 2);
+    wavSrBox.setSelectedId (proc.wavSr >= 47000.0 ? 2 : 1, juce::dontSendNotification);
+    wavSrBox.onChange = [this]
+    {
+        proc.wavSr = wavSrBox.getSelectedId() == 2 ? 48000.0 : 44100.0;
+    };
+    wavSrBox.setColour (juce::ComboBox::textColourId, kMetal);
+    wavSrBox.setColour (juce::ComboBox::arrowColourId, kMetal);
+    content.addAndMakeVisible (wavSrBox);
+    wavNormBtn.setClickingTogglesState (true);
+    wavNormBtn.setToggleState (proc.wavNorm, juce::dontSendNotification);
+    wavNormBtn.onClick = [this] { proc.wavNorm = wavNormBtn.getToggleState(); };
+    content.addAndMakeVisible (wavNormBtn);
     playBtn.setVisible (standalone);
     loopBtn.setVisible (standalone);
     bpmBox.setVisible (standalone);
-    exportBtn.setVisible (standalone);
 
     eqBtn.setClickingTogglesState (true);
     eqBtn.onClick = [this]
@@ -1239,8 +1253,11 @@ void K1XAudioProcessorEditor::layoutContent()
         playBtn.setBounds (tools.removeFromLeft (56).reduced (0, 2));
         loopBtn.setBounds (tools.removeFromLeft (52).reduced (0, 2));
         bpmBox.setBounds (tools.removeFromLeft (44).reduced (0, 4));
-        exportBtn.setBounds (tools.removeFromLeft (88).reduced (0, 2));
     }
+    tools.removeFromLeft (8);
+    exportBtn.setBounds (tools.removeFromLeft (88).reduced (0, 2));
+    wavSrBox.setBounds (tools.removeFromLeft (56).reduced (0, 2));
+    wavNormBtn.setBounds (tools.removeFromLeft (48).reduced (0, 2));
 
     fxPage.setBounds (r);
     auto waveRow = r.removeFromTop (110).reduced (0, 4);
@@ -1844,7 +1861,7 @@ void K1XAudioProcessorEditor::exportWav()
                               if (! file.hasFileExtension (".wav"))
                                   file = file.withFileExtension (".wav");
 
-                              const double sr = 44100.0;
+                              const double sr = safe->proc.wavSr;
                               juce::AudioBuffer<float> buf (2, 1);
                               int start = 0;
                               int count = 0;
@@ -1856,20 +1873,10 @@ void K1XAudioProcessorEditor::exportWav()
                               }
                               else
                               {
-                                  count = 44100 * 4; // kick + ~2 s FX tail
+                                  count = (int) (sr * 4.0); // kick + ~2 s FX tail
                                   buf.setSize (2, count);
                                   safe->proc.renderWithPost (buf, sr);
                               }
-
-                              juce::WavAudioFormat fmt;
-                              std::unique_ptr<juce::OutputStream> out (file.createOutputStream());
-                              if (out == nullptr)
-                                  return;
-                              const auto opts = juce::AudioFormatWriterOptions{}
-                                                    .withSampleRate (sr)
-                                                    .withNumChannels (2)
-                                                    .withBitsPerSample (16);
-                              if (auto w = fmt.createWriterFor (out, opts))
-                                  w->writeFromAudioSampleBuffer (buf, start, count);
+                              k1x::writeWav (file, buf, sr, start, count, safe->proc.wavNorm);
                           });
 }

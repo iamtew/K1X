@@ -1,5 +1,6 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
+#include "dsp/ExportNorm.h"
 #include "presets/FactoryPresets.h"
 
 static_assert (ParamID::layerOff == k1x::layerOff, "layer type ids");
@@ -488,6 +489,7 @@ void K1XAudioProcessor::renderBars (juce::AudioBuffer<float>& dest, double sampl
         eq.process (view, k1x::postEqEnabled (apvts), bands);
         pos += nThis;
     }
+    k1x::clipSamples (dest.getArrayOfWritePointers(), dest.getNumChannels(), n);
 }
 
 void K1XAudioProcessor::renderShot (float* dest, int n, double sampleRate) const
@@ -622,6 +624,7 @@ void K1XAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mi
 
     analyser.push (buffer);
     meter.push (buffer);
+    k1x::clipSamples (buffer.getArrayOfWritePointers(), buffer.getNumChannels(), n);
 }
 
 void K1XAudioProcessor::renderWithPost (juce::AudioBuffer<float>& dest, double sampleRate)
@@ -682,6 +685,7 @@ void K1XAudioProcessor::renderWithPost (juce::AudioBuffer<float>& dest, double s
         eq.process (view, k1x::postEqEnabled (apvts), bands);
         pos += nThis;
     }
+    k1x::clipSamples (dest.getArrayOfWritePointers(), dest.getNumChannels(), n);
 }
 
 juce::File K1XAudioProcessor::patchesDir() const
@@ -866,6 +870,8 @@ void K1XAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
     if (auto xml = apvts.copyState().createXml())
     {
         xml->setAttribute ("uiScale", uiScale);
+        xml->setAttribute ("wavSr", wavSr);
+        xml->setAttribute ("wavNorm", wavNorm ? 1 : 0);
         copyXmlToBinary (*xml, destData);
     }
 }
@@ -876,7 +882,11 @@ void K1XAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
         if (xml->hasTagName (apvts.state.getType()))
         {
             uiScale = juce::jlimit (0.4f, 1.5f, (float) xml->getDoubleAttribute ("uiScale", uiScale));  // sessions only, patches keep your size
+            wavSr = xml->getDoubleAttribute ("wavSr", wavSr) >= 47000.0 ? 48000.0 : 44100.0;
+            wavNorm = xml->getIntAttribute ("wavNorm", wavNorm ? 1 : 0) != 0;
             xml->removeAttribute ("uiScale");  // don't leak into patch saves
+            xml->removeAttribute ("wavSr");
+            xml->removeAttribute ("wavNorm");
             apvts.replaceState (juce::ValueTree::fromXml (*xml));
             reloadSlotSamples();
         }

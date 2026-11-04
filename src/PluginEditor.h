@@ -259,6 +259,8 @@ private:
     juce::TextEditor bpmBox;
     juce::ToggleButton eqBtn { "EQ" };
     juce::ToggleButton exportBtn { "Export WAV" };
+    juce::ComboBox wavSrBox;
+    juce::ToggleButton wavNormBtn { "Norm" };
     float loopBpm = 140.f;
     FxPage fxPage;
     EqPage layerEq;

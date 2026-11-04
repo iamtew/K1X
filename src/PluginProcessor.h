@@ -74,6 +74,8 @@ public:
 
     // Editor scale (drag the corner). Saved with the session, not with patches.
     float uiScale = 0.85f;
+    double wavSr = 44100.0;
+    bool wavNorm = true;
 
 private:
     float raw (const char* id) const;

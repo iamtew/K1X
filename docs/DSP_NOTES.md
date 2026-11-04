@@ -14,5 +14,6 @@
 - Filters: one-pole HP then LP. Lo/Hi are ±12 dB shelves around 0.5.
 - Length snap hard-gates with a 25 ms fade so the cut is not a click.
 - Post FX sit after the voice: each layer has a Send (default 1) into Distortion → Delay (tempo sync optional) → Reverb pre-delay (ms, or Sync snaps to 1/64…1/8) → Reverb, all fully wet. Dist types: Soft `tanh(x * drive)`, Hard clip, Fold `sin(x * drive)`, Diode (weaker negative). Drive is `1 + fxDstDrive * 12`. Shape offsets then subtracts DC. Tone is a post LP (skipped when fully open). Dry and FX faders mix. Defaults Dry=1 FX=0, Soft, open Tone, Shape centre, pre-delay 0 so old patches are unchanged.
-- Post EQ is five RBJ biquads after the mixer. Analyser FFT is after the EQ.
+- Post EQ is five RBJ biquads after the mixer. Analyser FFT is after the EQ. Output is then hard-clipped to ±1. The orange 0 dBFS flash uses the pre-clip peak.
+- WAV export is 24-bit, 44.1 or 48 kHz. Norm (default on) scales a 4× linear true-peak estimate to −0.1 dBTP. Same writer for the picker and drag-out.
 - Not a transistor model. If it sits off on a real clock/interface, Tune/Drop/Decay are the calibration knobs.

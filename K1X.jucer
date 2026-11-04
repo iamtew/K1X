@@ -25,6 +25,8 @@
         <FILE id="peqH001" name="ParametricEq.h" compile="0" resource="0" file="src/dsp/ParametricEq.h"/>
         <FILE id="pfxH001" name="PostFx.h" compile="0" resource="0" file="src/dsp/PostFx.h"/>
         <FILE id="dstH001" name="Distortion.h" compile="0" resource="0" file="src/dsp/Distortion.h"/>
+        <FILE id="exnH001" name="ExportNorm.h" compile="0" resource="0" file="src/dsp/ExportNorm.h"/>
+        <FILE id="wexH001" name="WavExport.h" compile="0" resource="0" file="src/dsp/WavExport.h"/>
       </GROUP>
       <GROUP id="prmGrp01" name="parameters">
         <FILE id="pidH001" name="ParameterIDs.h" compile="0" resource="0" file="src/parameters/ParameterIDs.h"/>

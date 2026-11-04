@@ -1,4 +1,5 @@
 #include "dsp/Distortion.h"
+#include "dsp/ExportNorm.h"
 #include "dsp/EqBiquad.h"
 #include "dsp/KickRender.h"
 #include "dsp/Layers.h"
@@ -485,6 +486,19 @@ int main()
     std::vector<std::string> tags { "0.0.2", "v0.0.1" };
     assert (k1x::newestNewerTag (tags, "0.0.1") == "0.0.2");
     assert (k1x::newestNewerTag (tags, "0.0.2").empty());
+
+    {
+        float a[8] = { 0.f, 2.f, -2.f, 0.5f, 0.f, 0.f, 0.f, 0.f };
+        float* ch[1] = { a };
+        k1x::clipSamples (ch, 1, 8);
+        assert (a[1] == 1.f && a[2] == -1.f);
+        float hot[4] = { 0.f, 1.5f, 1.5f, 0.f };
+        float* hch[1] = { hot };
+        k1x::normalizeToDbtp (hch, 1, 4, 0, 4);
+        float p = k1x::truePeak (hot, 4);
+        assert (p <= k1x::kExportDbtpLin + 1.0e-4f);
+        assert (p > 0.9f);
+    }
 
     std::printf ("kick_check ok  peak=%.3f energy=%.1f\n", peak, energy);
     return 0;
