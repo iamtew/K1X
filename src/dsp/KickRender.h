@@ -36,4 +36,29 @@ inline float midiNoteToHz (int note)
     return 440.f * std::pow (2.f, (float) (note - 69) / 12.f);
 }
 
+inline int hzToMidi (float hz)
+{
+    if (hz < 1.f)
+        hz = 1.f;
+    return (int) std::lround (69.0 + 12.0 * std::log2 ((double) hz / 440.0));
+}
+
+inline const char* midiPcName (int midi)
+{
+    static const char* pc[] = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
+    int p = midi % 12;
+    if (p < 0)
+        p += 12;
+    return pc[p];
+}
+
+inline int midiOctave (int midi)
+{
+    int p = midi % 12;
+    int oct = midi / 12 - 1;
+    if (p < 0)
+        --oct;
+    return oct;
+}
+
 } // namespace k1x

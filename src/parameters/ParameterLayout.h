@@ -1,7 +1,7 @@
 #pragma once
 
 #include "ParameterIDs.h"
-#include "../dsp/KickVoice.h"
+#include "../dsp/KickRender.h"
 
 #include <JuceHeader.h>
 
@@ -45,8 +45,23 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout
     auto hpR   = NormalisableRange<float> (10.f, 200.f, 0.1f, 0.4f);
     auto lpR   = NormalisableRange<float> (200.f, 8000.f, 1.f, 0.3f);
 
-    layout.add (std::make_unique<AudioParameterFloat> (ParameterID { ParamID::tune, 1 },
-                                                        "Tune", tuneR, 50.f, hzAttrs (tuneR)));
+    layout.add (std::make_unique<AudioParameterFloat> (
+        ParameterID { ParamID::tune, 1 }, "Tune", tuneR, 50.f,
+        AudioParameterFloatAttributes()
+            .withStringFromValueFunction ([] (float v, int)
+            {
+                const int n = k1x::hzToMidi (v);
+                return String (k1x::midiPcName (n)) + String (k1x::midiOctave (n)) + " "
+                       + String (roundToInt (v)) + " Hz";
+            })
+            .withValueFromStringFunction ([tuneR] (const String& t)
+            {
+                auto s = t.upToFirstOccurrenceOf ("Hz", false, false).trim();
+                const int sp = s.lastIndexOfChar (' ');
+                if (sp >= 0)
+                    s = s.substring (sp + 1);
+                return jlimit (tuneR.start, tuneR.end, s.getFloatValue());
+            })));
     layout.add (std::make_unique<AudioParameterFloat> (ParameterID { ParamID::pitchDrop, 1 },
                                                         "Drop", dropR, 1.5f, pct (dropR)));
     auto pHoldR = NormalisableRange<float> (0.f, 0.15f, 0.001f, 0.4f);

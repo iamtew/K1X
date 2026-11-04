@@ -49,6 +49,8 @@ int main()
     assert (std::abs (k1x::beatsToSeconds (0.25f, 120.f) - 0.125f) < 1e-4f); // 1/16
 
     assert (std::abs (k1x::midiNoteToHz (69) - 440.f) < 1e-3f);
+    assert (k1x::hzToMidi (440.f) == 69);
+    assert (k1x::hzToMidi (50.f) == k1x::hzToMidi (k1x::midiNoteToHz (k1x::hzToMidi (50.f))));
     assert (std::abs (k1x::midiNoteToHz (57) - 220.f) < 1e-3f); // A3
     assert (std::abs (k1x::midiNoteToHz (81) - 880.f) < 1e-3f); // A5
 

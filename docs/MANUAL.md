@@ -4,7 +4,7 @@ Kick one-shot (909 default). MIDI note-on retriggers and sets body pitch from th
 
 ## Knobs
 
-- **Tune** — body frequency.
+- **Tune** — body frequency (note name and Hz). MIDI note-on still sets body pitch from the note (A4 = 440 Hz) without moving the knob.
 - **Drop** — how many octaves above Tune the pitch starts.
 - **P.Hold** — how long the pitch sits at Drop before it falls. 0 is the old one-stage fall.
 - **P.Decay** — how fast the pitch falls to Tune.
