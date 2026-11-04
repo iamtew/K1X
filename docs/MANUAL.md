@@ -19,14 +19,33 @@ Kick one-shot (909 default). MIDI note-on retriggers and sets body pitch from th
 
 ## Layers
 
-The rail next to the waveform adds Bass, Noise, Click, or Sweep on top of the kick. Each layer has gain/mute/solo/phase on Mix, a **Delay** (0–80 ms) before the hit, and its own EQ. Noise knobs:
+The rail next to the waveform adds Bass, Noise, Click, or Sweep on top of the kick. Each layer has gain/mute/solo/phase on Mix, a **Delay / Pre** (0–80 ms) before the hit, and its own EQ. Shared on extra voices:
+
+- **Length** — how long the voice may speak (ms). Auto follows Decay, or the global Length snap when that is not Free.
+- **Attack** — fade-in after Pre (0–30 ms).
+- **Pre** — same Delay, labeled here so the layer can sit after the beater.
+
+Bass knobs:
+
+- **Tune** — semitones vs the kick body.
+- **Drop** — octaves above Tune at t=0; falls with Decay. 0 is a static sine.
+- **Decay / Drive / HPF / Tone** — amp tail, tanh, rumble cut, low-pass.
+
+Noise knobs:
 
 - **Type** — White, Pink, or Brown.
 - **Decay** — envelope inside the burst.
-- **Length** — how long the burst may speak (ms). Auto follows Decay, or the global Length snap when that is not Free.
 - **HPF / LPF** — band for the hiss.
-- **Pre** — same Delay, labeled here so the noise can sit after the beater.
-- **Attack** — fade-in after Pre (0–30 ms).
+
+Click knobs:
+
+- **Pitch / Decay / Tone** — sine pitch, burst time, sine vs noise mix.
+- **HPF / LPF** — band for the burst.
+
+Sweep knobs:
+
+- **Start / Drop / Decay** — start Hz, octaves down, fall time (also amp).
+- **Drive / Tone** — tanh (off at 0) and low-pass.
 
 **Volume** (title bar, right) — live master fader and a glance spectrum. Turns orange for ~800 ms if the output hits 0 dBFS.
 

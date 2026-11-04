@@ -3,6 +3,9 @@
 - Body: sine (+ 2nd harmonic on 707/Hard). Start frequency = Tune × 2^Drop, exponential fall to Tune.
 - Click: high-passed LCG noise. Style sets click time and gain (909 ≈ 4 ms).
 - Noise layer: same LCG, then White / Pink (Kellet 3-pole) / Brown (leaky integrator). Pre-delay, optional attack fade, decay, and a length window (0 = Auto). HP then LP.
+- Bass layer: sine at Tune×2^(semitones/12), optional Drop (octaves, same Decay as amp), tanh Drive, HP then LP, Length/Attack like Noise.
+- Click layer: sine+noise mix, then HP/LP, Length/Attack like Noise.
+- Sweep layer: falling sine (Start, Drop octaves, Decay). Optional tanh Drive. LP Tone. Length/Attack like Noise.
 - Style also scales pitch-decay and amp-decay. Knobs stay independent.
 - Attack / Punch maps to 0.3–50 ms amp attack, then exponential decay. Waveform overlay matches that time; it does not skip samples.
 - Drive: `tanh(x * (1 + drive * 4))`.

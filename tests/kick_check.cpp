@@ -209,12 +209,114 @@ int main()
             clickTail = std::max (clickTail, std::abs (buf[(size_t) i]));
         assert (clickTail < 1.0e-4f);
 
+        ck = {};
+        ck.decayMs = 40.f;
+        ck.lengthSec = 0.01f;
+        k1x::renderClickLayer (buf.data(), (int) buf.size(), 44100.0, ck);
+        clickTail = 0.f;
+        for (int i = (int) (0.03f * 44100.f); i < (int) buf.size(); ++i)
+            clickTail = std::max (clickTail, std::abs (buf[(size_t) i]));
+        assert (clickTail < 1.0e-4f);
+
+        auto clickLow = [&] (float hpHz)
+        {
+            k1x::ClickVoice::Params p;
+            p.tone = 0.f;
+            p.decayMs = 30.f;
+            p.lengthSec = 0.08f;
+            p.hpfHz = hpHz;
+            p.lpfHz = 16000.f;
+            k1x::renderClickLayer (buf.data(), (int) buf.size(), 44100.0, p);
+            float lp = 0.f, e = 0.f;
+            const float c = 1.f - std::exp (-6.283185307179586f * 400.f / 44100.f);
+            const int n = (int) (0.08f * 44100.f);
+            for (int i = 0; i < n; ++i)
+            {
+                const float x = buf[(size_t) i];
+                lp += c * (x - lp);
+                e += lp * lp;
+            }
+            return e;
+        };
+        assert (clickLow (80.f) > clickLow (3000.f) * 1.2f);
+
         k1x::SweepVoice::Params sw;
         k1x::renderSweep (buf.data(), (int) buf.size(), 44100.0, sw);
         float swPeak = 0.f;
         for (int i = 0; i < 8000; ++i)
             swPeak = std::max (swPeak, std::abs (buf[(size_t) i]));
         assert (swPeak > 0.05f);
+
+        auto sweepHigh = [&] (float drive)
+        {
+            k1x::SweepVoice::Params p;
+            p.startHz = 400.f;
+            p.dropOct = 0.f;
+            p.decay = 0.2f;
+            p.lengthSec = 0.15f;
+            p.drive = drive;
+            p.lpfHz = 8000.f;
+            k1x::renderSweep (buf.data(), (int) buf.size(), 44100.0, p);
+            float hp = 0.f, e = 0.f;
+            const float c = 1.f - std::exp (-6.283185307179586f * 800.f / 44100.f);
+            const int n = (int) (0.15f * 44100.f);
+            for (int i = 0; i < n; ++i)
+            {
+                const float x = buf[(size_t) i];
+                hp += c * (x - hp);
+                e += (x - hp) * (x - hp);
+            }
+            return e;
+        };
+        assert (sweepHigh (1.f) > sweepHigh (0.f) * 1.5f);
+
+        sw = {};
+        sw.decay = 0.5f;
+        sw.lengthSec = 0.02f;
+        k1x::renderSweep (buf.data(), (int) buf.size(), 44100.0, sw);
+        float swTail = 0.f;
+        for (int i = (int) (0.05f * 44100.f); i < (int) buf.size(); ++i)
+            swTail = std::max (swTail, std::abs (buf[(size_t) i]));
+        assert (swTail < 1.0e-4f);
+
+        bass = {};
+        bass.tuneHz = 50.f;
+        bass.decay = 1.f;
+        bass.lengthSec = 0.03f;
+        k1x::renderBass (buf.data(), (int) buf.size(), 44100.0, bass);
+        float bassTail = 0.f;
+        for (int i = (int) (0.06f * 44100.f); i < (int) buf.size(); ++i)
+            bassTail = std::max (bassTail, std::abs (buf[(size_t) i]));
+        assert (bassTail < 1.0e-4f);
+
+        bass = {};
+        bass.tuneHz = 50.f;
+        bass.decay = 0.4f;
+        bass.attackMs = 25.f;
+        bass.lengthSec = 0.2f;
+        k1x::renderBass (buf.data(), (int) buf.size(), 44100.0, bass);
+        assert (std::abs (buf[0]) < 1.0e-4f);
+        float atkLater = 0.f;
+        for (int i = (int) (0.02f * 44100.f); i < (int) (0.03f * 44100.f); ++i)
+            atkLater = std::max (atkLater, std::abs (buf[(size_t) i]));
+        assert (atkLater > 0.02f);
+
+        auto bassZc = [&] (float drop)
+        {
+            k1x::BassVoice::Params p;
+            p.tuneHz = 50.f;
+            p.dropOct = drop;
+            p.decay = 0.4f;
+            p.lengthSec = 0.05f;
+            k1x::renderBass (buf.data(), (int) buf.size(), 44100.0, p);
+            int zc = 0;
+            const int n = (int) (0.02f * 44100.f);
+            for (int i = 1; i < n; ++i)
+                if ((buf[(size_t) i - 1] < 0.f) != (buf[(size_t) i] < 0.f))
+                    ++zc;
+            return zc;
+        };
+        assert (bassZc (2.f) > bassZc (0.f) * 1.3f);
 
         float gain[4] = { 1.f, 0.5f, 1.f, 1.f };
         bool mute[4] = { false, false, true, false };
