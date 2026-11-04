@@ -7,7 +7,7 @@
 - Click layer: sine+noise mix, then HP/LP, Length/Attack like Noise.
 - Sweep layer: falling sine (Start, Drop octaves, Decay). Optional tanh Drive. LP Tone. Length/Attack like Noise.
 - Style also scales pitch-decay and amp-decay. Knobs stay independent.
-- Attack / Punch maps to 0.3–50 ms amp attack, then exponential decay. Waveform overlay matches that time; it does not skip samples.
+- Attack / Punch maps to 0.3–50 ms amp attack, then exponential decay. Waveform overlay matches that time; it does not skip samples. The preview is the summed layers (post layer EQ, mute/solo/gain, master), before post FX.
 - Drive: `tanh(x * (1 + drive * 4))`.
 - Filters: one-pole HP then LP. Lo/Hi are ±12 dB shelves around 0.5.
 - Length snap hard-gates with a 25 ms fade so the cut is not a click.

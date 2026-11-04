@@ -65,7 +65,13 @@ template <typename Fn>
 void eachLayerVoiceId (Fn&& fn)
 {
     for (int layer = 0; layer < ParamID::layerCount; ++layer)
+    {
+        fn (ParamID::lyGain[layer]);
+        fn (ParamID::lyMute[layer]);
+        fn (ParamID::lySolo[layer]);
+        fn (ParamID::lyFlip[layer]);
         fn (ParamID::lyDelay[layer]);
+    }
     for (int s = 0; s < ParamID::slotCount; ++s)
     {
         fn (ParamID::lyType[s]);
@@ -1022,53 +1028,49 @@ void K1XAudioProcessorEditor::rebuildWave()
     waveDirty = false;
     constexpr int fullN = 44100;
     constexpr int bins = 1024;
-    std::vector<float> storage[k1x::kMixLayers];
-    float* chan[k1x::kMixLayers];
-    for (int L = 0; L < k1x::kMixLayers; ++L)
-    {
-        storage[L].assign ((size_t) fullN, 0.f);
-        chan[L] = storage[L].data();
-    }
-    proc.renderLayerChans (chan, fullN, 44100.0);
-
-    bool show[k1x::kMixLayers] = { true, false, false, false };
-    for (int s = 0; s < ParamID::slotCount; ++s)
-        show[ParamID::layerOfSlot (s)] = slotType (s) != ParamID::layerOff;
+    std::vector<float> mix ((size_t) fullN, 0.f);
+    proc.renderShot (mix.data(), fullN, 44100.0);
 
     int last = 64;
-    for (int L = 0; L < k1x::kMixLayers; ++L)
     {
-        if (! show[L])
-            continue;
         int end = fullN - 1;
-        while (end > 64 && std::abs (storage[L][(size_t) end]) < 0.002f)
+        while (end > 64 && std::abs (mix[(size_t) end]) < 0.002f)
             --end;
-        last = juce::jmax (last, end);
+        last = end;
     }
 
-    wave.durationSec = (float) last / 44100.f;
-    wave.traces.clear();
-    auto push = [&] (int L, float alpha, float attack)
+    auto downsample = [&] (const float* src, int nSrc, juce::Colour colour, float alpha, float attack)
     {
         K1XAudioProcessorEditor::WaveView::Trace tr;
-        tr.colour = L == 0 ? kOrange : layerColour (slotType (L - 1));
+        tr.colour = colour;
         tr.alpha = alpha;
         tr.attackSec = attack;
         tr.samples.resize ((size_t) bins);
         for (int i = 0; i < bins; ++i)
         {
-            const int src = (int) ((double) i / (double) (bins - 1) * (double) last);
-            tr.samples[(size_t) i] = juce::jlimit (-1.f, 1.f, storage[L][(size_t) src]);
+            const int idx = (int) ((double) i / (double) (bins - 1) * (double) nSrc);
+            tr.samples[(size_t) i] = juce::jlimit (-1.f, 1.f, src[idx]);
         }
         wave.traces.push_back (std::move (tr));
     };
 
-    const int hot = mixView ? -1 : selectedLayer;
-    for (int L = 0; L < k1x::kMixLayers; ++L)
-        if (show[L] && L != hot)
-            push (L, 0.4f, 0.f);
-    if (hot >= 0 && show[hot])
-        push (hot, 1.f, hot == 0 ? k1x::punchToAttackMs (proc.currentParams().punch) * 0.001f : 0.f);
+    wave.durationSec = (float) last / 44100.f;
+    wave.traces.clear();
+    const float mixAttack = mixView || selectedLayer == 0
+        ? k1x::punchToAttackMs (proc.currentParams().punch) * 0.001f
+        : 0.f;
+    downsample (mix.data(), last, kOrange, 1.f, mixAttack);
+
+    // Slot edit: the selected layer on top of the mix so you can see what you are turning.
+    if (! mixView && selectedLayer > 0 && slotType (selectedLayer - 1) != ParamID::layerOff)
+    {
+        std::vector<float> storage[k1x::kMixLayers];
+        float* chan[k1x::kMixLayers] = {};
+        storage[selectedLayer].assign ((size_t) fullN, 0.f);
+        chan[selectedLayer] = storage[selectedLayer].data();
+        proc.renderLayerChans (chan, fullN, 44100.0);
+        downsample (storage[selectedLayer].data(), last, layerColour (slotType (selectedLayer - 1)), 0.7f, 0.f);
+    }
     wave.repaint();
 }
 

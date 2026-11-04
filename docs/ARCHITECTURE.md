@@ -12,6 +12,6 @@ Audio thread:
 
 Message thread:
 
-- KickRender fills a buffer for the waveform panel (dry kick)
+- Waveform panel uses the same layered mix as Play (post layer EQ, before post FX)
 - WAV export runs the same post path plus ~2 s of tail
 - Same KickVoice as the audio path
