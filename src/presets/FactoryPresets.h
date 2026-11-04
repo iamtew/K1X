@@ -187,27 +187,116 @@ struct FactoryLayer
 
 struct FactoryStack
 {
-    FactoryLayer layer[2];
+    float kickDelayMs;
+    FactoryLayer layer[3];
 };
 
-inline constexpr FactoryStack stackRecipes[6] = {
-    { { { 1, -12.f, 0.70f, 0.12f, 18.f, 0.8f, 600.f,  0.75f, 0.f, 0.f,  0.f },
-        { 3, 2400.f, 5.f,  0.35f, 1200.f, 10000.f, 0.f, 0.40f, 1.f, 0.f,  0.f } } },
-    { { { 1, -12.f, 0.90f, 0.08f, 16.f, 0.4f, 400.f,  0.80f, 0.f, 0.f,  0.f },
-        { 2, 0.18f, 400.f, 5000.f, 1.f, 0.f, 0.f,     0.30f, 4.f, 80.f, 2.f } } },
-    { { { 4, 280.f, 2.2f,  0.07f, 0.15f, 5000.f, 0.f, 0.55f, 0.f, 0.f,  0.f },
-        { 2, 0.06f, 1500.f, 8000.f, 0.f, 0.f, 0.f,    0.28f, 0.f, 40.f, 0.f } } },
-    { { { 1, -19.f, 1.10f, 0.20f, 14.f, 1.2f, 350.f, 0.70f, 2.f, 0.f,  4.f },
-        { 0, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f,           0.f, 0.f, 0.f,  0.f } } },
-    { { { 3, 3200.f, 3.5f, 0.20f, 2000.f, 12000.f, 0.f, 0.50f, 0.f, 12.f, 0.f },
-        { 2, 0.10f, 900.f, 6500.f, 0.f, 0.f, 0.f,    0.33f, 3.f, 50.f, 0.f } } },
-    { { { 1, -7.f,  0.45f, 0.25f, 28.f, 0.6f, 1200.f, 0.65f, 0.f, 0.f,  0.f },
-        { 4, 500.f, 3.0f,  0.05f, 0.35f, 6000.f, 0.f, 0.42f, 0.f, 0.f,  0.f } } },
+// One recipe per category. Kick Pre ~1 ms so a click at 0 sits 1 ms early; bass ~4 ms late.
+inline constexpr FactoryLayer kOffLayer { 0, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f };
+
+inline constexpr FactoryStack kStack909 {
+    1.f,
+    { { 3, 2400.f, 5.f, 0.35f, 1200.f, 10000.f, 0.f, 0.42f, 0.f, 0.f, 0.f },
+      { 1, -12.f, 0.70f, 0.12f, 18.f, 0.8f, 600.f, 0.72f, 4.f, 0.f, 0.f },
+      kOffLayer }
 };
+inline constexpr FactoryStack kStack808 {
+    1.f,
+    { { 3, 1800.f, 4.f, 0.20f, 800.f, 8000.f, 0.f, 0.28f, 0.f, 0.f, 0.f },
+      { 1, -19.f, 1.10f, 0.20f, 14.f, 0.4f, 400.f, 0.80f, 4.f, 0.f, 0.f },
+      kOffLayer }
+};
+inline constexpr FactoryStack kStack707 {
+    1.f,
+    { { 3, 3200.f, 3.5f, 0.20f, 2000.f, 12000.f, 0.f, 0.50f, 0.f, 0.f, 0.f },
+      { 2, 0.10f, 900.f, 6500.f, 0.f, 0.f, 0.f, 0.33f, 3.f, 50.f, 0.f },
+      kOffLayer }
+};
+inline constexpr FactoryStack kStackEdm {
+    1.f,
+    { { 3, 2800.f, 4.f, 0.40f, 1500.f, 12000.f, 0.f, 0.45f, 0.f, 0.f, 0.f },
+      { 4, 400.f, 2.5f, 0.06f, 0.20f, 6000.f, 0.f, 0.40f, 0.f, 0.f, 0.f },
+      { 1, -12.f, 0.60f, 0.15f, 20.f, 1.0f, 800.f, 0.65f, 4.f, 0.f, 0.f } }
+};
+inline constexpr FactoryStack kStackTechno {
+    1.f,
+    { { 3, 2200.f, 6.f, 0.30f, 1000.f, 10000.f, 0.f, 0.38f, 0.f, 0.f, 0.f },
+      { 4, 280.f, 2.2f, 0.07f, 0.15f, 5000.f, 0.f, 0.50f, 0.f, 0.f, 0.f },
+      { 1, -7.f, 0.50f, 0.20f, 22.f, 0.6f, 500.f, 0.60f, 4.f, 0.f, 0.f } }
+};
+inline constexpr FactoryStack kStackHardcore {
+    0.5f,
+    { { 4, 500.f, 3.0f, 0.05f, 0.35f, 6000.f, 0.f, 0.55f, 0.f, 0.f, 0.f },
+      { 2, 0.06f, 1500.f, 8000.f, 0.f, 0.f, 0.f, 0.35f, 0.f, 40.f, 0.f },
+      kOffLayer }
+};
+inline constexpr FactoryStack kStackDistorted {
+    1.f,
+    { { 4, 350.f, 2.8f, 0.08f, 0.50f, 4500.f, 0.f, 0.50f, 0.f, 0.f, 0.f },
+      { 2, 0.12f, 400.f, 5000.f, 1.f, 0.f, 0.f, 0.30f, 2.f, 80.f, 0.f },
+      kOffLayer }
+};
+inline constexpr FactoryStack kStackHipHop {
+    1.f,
+    { { 1, -12.f, 0.90f, 0.08f, 16.f, 0.4f, 400.f, 0.80f, 4.f, 0.f, 0.f },
+      { 3, 2000.f, 6.f, 0.25f, 800.f, 8000.f, 0.f, 0.35f, 0.f, 0.f, 0.f },
+      kOffLayer }
+};
+inline constexpr FactoryStack kStackPunch {
+    1.f,
+    { { 3, 3200.f, 3.5f, 0.20f, 2000.f, 12000.f, 0.f, 0.55f, 0.f, 0.f, 0.f },
+      { 2, 0.08f, 1200.f, 8000.f, 0.f, 0.f, 0.f, 0.28f, 2.f, 40.f, 0.f },
+      kOffLayer }
+};
+inline constexpr FactoryStack kStackWeird {
+    3.f,
+    { { 3, 4000.f, 8.f, 0.10f, 2000.f, 12000.f, 0.f, 0.40f, 0.f, 0.f, 0.f },
+      { 4, 800.f, 4.0f, 0.12f, 0.40f, 7000.f, 0.f, 0.45f, 8.f, 0.f, 0.f },
+      { 1, -5.f, 0.40f, 0.30f, 40.f, 2.0f, 2000.f, 0.50f, 12.f, 0.f, 0.f } }
+};
+inline constexpr FactoryStack kStackTight {
+    1.f,
+    { { 3, 3500.f, 3.0f, 0.15f, 2500.f, 14000.f, 0.f, 0.50f, 0.f, 0.f, 0.f },
+      { 2, 0.05f, 2000.f, 9000.f, 0.f, 0.f, 0.f, 0.25f, 1.f, 30.f, 0.f },
+      kOffLayer }
+};
+inline constexpr FactoryStack kStackHard {
+    1.f,
+    { { 4, 450.f, 2.5f, 0.06f, 0.40f, 5000.f, 0.f, 0.45f, 0.f, 0.f, 0.f },
+      { 1, -8.f, 0.45f, 0.25f, 28.f, 0.8f, 900.f, 0.60f, 4.f, 0.f, 0.f },
+      kOffLayer }
+};
+
+inline constexpr FactoryStack stackForCategory (const char* cat)
+{
+    if (factorySame (cat, "808"))
+        return kStack808;
+    if (factorySame (cat, "707"))
+        return kStack707;
+    if (factorySame (cat, "EDM"))
+        return kStackEdm;
+    if (factorySame (cat, "Techno"))
+        return kStackTechno;
+    if (factorySame (cat, "Hardcore"))
+        return kStackHardcore;
+    if (factorySame (cat, "Distorted"))
+        return kStackDistorted;
+    if (factorySame (cat, "Hip-Hop"))
+        return kStackHipHop;
+    if (factorySame (cat, "Punch"))
+        return kStackPunch;
+    if (factorySame (cat, "Weird"))
+        return kStackWeird;
+    if (factorySame (cat, "Tight"))
+        return kStackTight;
+    if (factorySame (cat, "Hard"))
+        return kStackHard;
+    return kStack909;
+}
 
 inline constexpr FactoryStack stackFor (int index)
 {
-    return stackRecipes[index % 6];
+    return stackForCategory (factoryPresets[index].category);
 }
 
 constexpr bool endsWith (const char* s, const char* suf)
@@ -355,7 +444,7 @@ constexpr bool factoryBankOk()
         if (endsWith (factoryPresets[i].name, " Stack"))
             return false;
         const FactoryStack stack = stackFor (i);
-        if (stack.layer[0].type <= 0)
+        if (! factoryInRange (stack.kickDelayMs, 0.f, 80.f) || stack.layer[0].type <= 0)
             return false;
         for (const FactoryLayer& L : stack.layer)
         {

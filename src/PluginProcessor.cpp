@@ -165,9 +165,9 @@ void applyStack (K1XAudioProcessor& proc, int index)
     applyFactory (proc, k1x::factoryPresets[index]);
     auto& apvts = proc.apvts;
     const auto stack = k1x::stackFor (index);
-    const float nudge = 0.02f * (float) (index % 3);
-    applyStackLayer (apvts, 0, stack.layer[0], nudge);
-    applyStackLayer (apvts, 1, stack.layer[1], 0.f);
+    setParam (apvts, ParamID::lyDelay[0], stack.kickDelayMs);
+    for (int s = 0; s < ParamID::slotCount; ++s)
+        applyStackLayer (apvts, s, stack.layer[s], 0.f);
     const juce::String name = juce::String (k1x::factoryPresets[index].name) + " Stack";
     apvts.state.setProperty (kPatchName, name, nullptr);
 }

@@ -68,7 +68,7 @@ Parallel send after the layered mix. **Dry** is the unprocessed mix; **FX** is D
 
 Five-band parametric under the FX row. Spectrum is the live output after FX and EQ. Drag a node for freq/gain, wheel for Q, double-click to reset a band. **EQ** (left of the rail header) bypasses the whole EQ. **Reset** (right half of that header) restores all bands and EQ on/off to defaults.
 
-**Init Patch** (title bar) — a factory preset shows as Category / Name. Click for Init / Save / Save As / Export / Import, a factory category, or your saved list. Chevrons step the factory bank, then any extra patches. Your files live in `%AppData%\Stupid Systems LLC\K1X\Patches` as `.k1xp`. Saving a factory name stores your copy there; delete that file to hear the factory sound again.
+**Init Patch** (title bar) — a factory preset shows as Single / Category / Name or Multi / Category / Name Stack. Single is the voice. Multi turns slots on (click about 1 ms early, sub about 4 ms late, sweep under the beater — one recipe per category). Click for Init / Save / Save As / Export / Import, a factory category, or your saved list. Chevrons step the factory bank, then any extra patches. Your files live in `%AppData%\Stupid Systems LLC\K1X\Patches` as `.k1xp`. Saving a factory name stores your copy there; delete that file to hear the factory sound again.
 
 Click **K1X** + version in the top left for About and a GitHub update check.
 
