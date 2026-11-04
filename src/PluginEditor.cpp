@@ -1154,15 +1154,14 @@ void K1XAudioProcessorEditor::layoutContent()
                                      r.getY() + (i / cols) * cellH,
                                      cellW, cellH);
     };
-    const int knobOff = showNoiseType ? 1 : 0;
     if (showNoiseType)
     {
-        auto c = cellAt (0);
+        auto c = cellAt (6);
         noiseTypeLabel.setBounds (c.removeFromTop (kLabelH));
         noiseTypeBox.setBounds (c.reduced (6, juce::jmax (0, (c.getHeight() - 24) / 2)));
     }
     for (int i = 0; i < knobs.size(); ++i)
-        knobs[i]->setBounds (cellAt (i + knobOff));
+        knobs[i]->setBounds (cellAt (i));
 
     aboutBox.setBounds (content.getLocalBounds());
     applyPageVisibility();
