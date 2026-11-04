@@ -2,6 +2,7 @@
 
 #include "PluginProcessor.h"
 #include "ui/EqPage.h"
+#include "ui/LayerMix.h"
 
 #include <atomic>
 #include <functional>
@@ -239,6 +240,7 @@ private:
     juce::ToggleButton exportBtn { "Export WAV" };
     FxPage fxPage;
     EqPage layerEq;
+    LayerMix layerMix;
     AboutBox aboutBox;
     int editorPage = 0;
     int selectedLayer = 0;

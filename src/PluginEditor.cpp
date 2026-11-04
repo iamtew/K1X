@@ -823,7 +823,7 @@ void K1XAudioProcessorEditor::VolumeStrip::refresh()
 }
 
 K1XAudioProcessorEditor::K1XAudioProcessorEditor (K1XAudioProcessor& p)
-    : juce::AudioProcessorEditor (p), proc (p), fxPage (p), layerEq (p)
+    : juce::AudioProcessorEditor (p), proc (p), fxPage (p), layerEq (p), layerMix (p)
 {
     setLookAndFeel (&panelLnF);
     setOpaque (true);
@@ -902,6 +902,7 @@ K1XAudioProcessorEditor::K1XAudioProcessorEditor (K1XAudioProcessor& p)
     content.addAndMakeVisible (fxPage);
     fxPage.setVisible (false);
     content.addChildComponent (layerEq);
+    content.addChildComponent (layerMix);
 
     content.addChildComponent (aboutBox);
     aboutBox.setVisible (false);
@@ -952,6 +953,8 @@ void K1XAudioProcessorEditor::timerCallback()
     if (! anyExtraLayer() && mixView)
         selectLayer (0);
     bindKnobs();
+    if (layerMix.isVisible())
+        layerMix.refresh();
     rail.repaint();
     refreshPatchName();
     volumeStrip.refresh();
@@ -1080,6 +1083,7 @@ void K1XAudioProcessorEditor::layoutContent()
     wave.setBounds (waveRow);
     r.removeFromTop (6);
     layerEq.setBounds (r);
+    layerMix.setBounds (r);
     const int cols = 6;
     const int rows = 2;
     const int cellW = r.getWidth() / cols;
@@ -1264,6 +1268,7 @@ void K1XAudioProcessorEditor::applyPageVisibility()
     for (auto* k : knobs)
         k->setVisible (showKnobs && k->used);
     layerEq.setVisible (showEq);
+    layerMix.setVisible (main && mixView);
     eqBtn.setVisible (main && ! mixView);
     fxPage.setVisible (! main);
 }

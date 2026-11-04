@@ -39,6 +39,7 @@
         <FILE id="verH001" name="VersionCompare.h" compile="0" resource="0"
               file="src/ui/VersionCompare.h"/>
         <FILE id="eqpH001" name="EqPage.h" compile="0" resource="0" file="src/ui/EqPage.h"/>
+        <FILE id="lmxH001" name="LayerMix.h" compile="0" resource="0" file="src/ui/LayerMix.h"/>
       </GROUP>
     </GROUP>
   </MAINGROUP>
