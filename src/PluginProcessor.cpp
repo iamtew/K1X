@@ -122,24 +122,39 @@ void applyStackLayer (juce::AudioProcessorValueTreeState& apvts, int slot, const
         setParam (apvts, ParamID::lyBassDecay[slot], L.b);
         setParam (apvts, ParamID::lyBassDrive[slot], L.c);
         setParam (apvts, ParamID::lyBassHp[slot], L.d);
+        setParam (apvts, ParamID::lyBassDrop[slot], L.e);
+        setParam (apvts, ParamID::lyBassLp[slot], L.f);
+        setParam (apvts, ParamID::lyBassLen[slot], L.lengthMs);
+        setParam (apvts, ParamID::lyBassAtk[slot], L.attackMs);
     }
     else if (L.type == ParamID::layerNoise)
     {
         setParam (apvts, ParamID::lyNoiseDecay[slot], L.a);
         setParam (apvts, ParamID::lyNoiseHp[slot], L.b);
         setParam (apvts, ParamID::lyNoiseLp[slot], L.c);
+        setParam (apvts, ParamID::lyNoiseType[slot], L.d);
+        setParam (apvts, ParamID::lyNoiseLen[slot], L.lengthMs);
+        setParam (apvts, ParamID::lyNoiseAtk[slot], L.attackMs);
     }
     else if (L.type == ParamID::layerClick)
     {
         setParam (apvts, ParamID::lyClickPitch[slot], L.a);
         setParam (apvts, ParamID::lyClickDecay[slot], L.b);
         setParam (apvts, ParamID::lyClickTone[slot], L.c);
+        setParam (apvts, ParamID::lyClickHp[slot], L.d);
+        setParam (apvts, ParamID::lyClickLp[slot], L.e);
+        setParam (apvts, ParamID::lyClickLen[slot], L.lengthMs);
+        setParam (apvts, ParamID::lyClickAtk[slot], L.attackMs);
     }
     else if (L.type == ParamID::layerSweep)
     {
         setParam (apvts, ParamID::lySweepStart[slot], L.a);
         setParam (apvts, ParamID::lySweepDrop[slot], L.b);
         setParam (apvts, ParamID::lySweepDecay[slot], L.c);
+        setParam (apvts, ParamID::lySweepDrive[slot], L.d);
+        setParam (apvts, ParamID::lySweepLp[slot], L.e);
+        setParam (apvts, ParamID::lySweepLen[slot], L.lengthMs);
+        setParam (apvts, ParamID::lySweepAtk[slot], L.attackMs);
     }
 }
 
