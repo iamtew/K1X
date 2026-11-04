@@ -40,6 +40,7 @@ private:
     juce::Rectangle<int> titleHitBounds() const;
     void openAbout();
     void exportWav();
+    void commitLoopBpm();
     void refreshPatchName();
     void openPatchMenu();
     void cyclePatch (int delta);
@@ -236,8 +237,11 @@ private:
     PatchBar pageBar;
     VolumeStrip volumeStrip { *this };
     juce::ToggleButton playBtn { "Play" };
+    juce::ToggleButton loopBtn { "Loop" };
+    juce::TextEditor bpmBox;
     juce::ToggleButton eqBtn { "EQ" };
     juce::ToggleButton exportBtn { "Export WAV" };
+    float loopBpm = 140.f;
     FxPage fxPage;
     EqPage layerEq;
     LayerMix layerMix;

@@ -324,6 +324,105 @@ void K1XAudioProcessor::renderLayerChans (float* const* chan, int n, double samp
     }
 }
 
+void K1XAudioProcessor::setLooping (bool on, float bpm)
+{
+    if (bpm < 40.f)
+        bpm = 40.f;
+    if (bpm > 240.f)
+        bpm = 240.f;
+    loopBpm.store (bpm, std::memory_order_relaxed);
+    loopOn.store (on, std::memory_order_relaxed);
+    if (on)
+        loopRestart.store (true, std::memory_order_relaxed);
+}
+
+void K1XAudioProcessor::renderBars (juce::AudioBuffer<float>& dest, double sampleRate, float bpm, int bars)
+{
+    if (bpm < 40.f)
+        bpm = 40.f;
+    if (bars < 1)
+        bars = 1;
+    const int period = juce::jmax (1, (int) (sampleRate * 60.0 / (double) bpm));
+    const int n = period * 4 * bars;
+    dest.setSize (juce::jmax (1, dest.getNumChannels()), n, false, true, true);
+    dest.clear();
+
+    auto kickP = currentParams();
+    k1x::SlotVoiceParams slotParams[ParamID::slotCount];
+    fillSlots (slotParams, kickP.tuneHz, kickP.lengthSec);
+    float amp[k1x::kMixLayers];
+    fillAmps (amp);
+
+    k1x::LayerStack local;
+    local.prepare (sampleRate);
+    std::vector<float> storage[k1x::kMixLayers];
+    for (int L = 0; L < k1x::kMixLayers; ++L)
+        storage[L].assign ((size_t) n, 0.f);
+
+    int wait = 0;
+    for (int i = 0; i < n; ++i)
+    {
+        if (wait <= 0)
+        {
+            local.trigger (kickP, slotParams);
+            wait = period;
+        }
+        float layer[k1x::kMixLayers];
+        local.tickInto (layer);
+        for (int L = 0; L < k1x::kMixLayers; ++L)
+            storage[L][(size_t) i] = layer[L];
+        --wait;
+    }
+
+    const int block = 512;
+    for (int L = 0; L < k1x::kMixLayers; ++L)
+    {
+        k1x::ParametricEq eq;
+        eq.prepare (sampleRate, block, 1);
+        k1x::EqBandParam bands[k1x::eqBandCount];
+        const auto ids = k1x::layerEqIds (L);
+        k1x::readEqBands (apvts, ids, bands);
+        const bool on = k1x::eqEnabled (apvts, ids.on);
+        for (int pos = 0; pos < n; )
+        {
+            const int nThis = juce::jmin (block, n - pos);
+            float* ptrs[1] = { storage[L].data() + pos };
+            juce::AudioBuffer<float> view (ptrs, 1, nThis);
+            eq.process (view, on, bands);
+            pos += nThis;
+        }
+    }
+
+    const float master = kickP.level;
+    auto* l = dest.getWritePointer (0);
+    for (int i = 0; i < n; ++i)
+    {
+        float acc = 0.f;
+        for (int L = 0; L < k1x::kMixLayers; ++L)
+            acc += storage[L][(size_t) i] * amp[L];
+        l[i] = acc * master;
+    }
+    for (int ch = 1; ch < dest.getNumChannels(); ++ch)
+        dest.copyFrom (ch, 0, dest, 0, 0, n);
+
+    // ponytail: two bars then keep the second, so the downbeat has the previous hit's tail.
+    // A reverb longer than one bar still will not cycle cleanly.
+    k1x::PostFx fx;
+    k1x::ParametricEq eq;
+    fx.prepare (sampleRate, block, dest.getNumChannels());
+    eq.prepare (sampleRate, block, dest.getNumChannels());
+    for (int pos = 0; pos < n; )
+    {
+        const int nThis = juce::jmin (block, n - pos);
+        juce::AudioBuffer<float> view (dest.getArrayOfWritePointers(), dest.getNumChannels(), pos, nThis);
+        fx.process (view, bpm, apvts);
+        k1x::EqBandParam bands[k1x::eqBandCount];
+        k1x::readEqBands (apvts, bands);
+        eq.process (view, k1x::postEqEnabled (apvts), bands);
+        pos += nThis;
+    }
+}
+
 void K1XAudioProcessor::renderShot (float* dest, int n, double sampleRate) const
 {
     std::vector<float> storage[k1x::kMixLayers];
@@ -365,25 +464,47 @@ void K1XAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mi
     auto kickP = currentParams();
     if (midiNote >= 0)
         kickP.tuneHz = k1x::midiNoteToHz (midiNote);
-    if (trig)
+    k1x::SlotVoiceParams slots[ParamID::slotCount];
+    fillSlots (slots, kickP.tuneHz, kickP.lengthSec);
+
+    const bool looping = loopOn.load (std::memory_order_relaxed);
+    if (looping && loopRestart.exchange (false, std::memory_order_relaxed))
     {
-        k1x::SlotVoiceParams slots[ParamID::slotCount];
-        fillSlots (slots, kickP.tuneHz, kickP.lengthSec);
-        stack.trigger (kickP, slots);
+        trig = true;
+        loopWait = 0;
     }
+    const float bpm = juce::jlimit (40.f, 240.f, loopBpm.load (std::memory_order_relaxed));
+    const int period = juce::jmax (1, (int) (getSampleRate() * 60.0 / (double) bpm));
 
     float amp[k1x::kMixLayers];
     fillAmps (amp);
     auto* l = buffer.getWritePointer (0);
     const int n = buffer.getNumSamples();
     const int nEq = juce::jmin (n, layerScratch.getNumSamples());
+    int wait = loopWait;
+    bool fire = trig;
     for (int i = 0; i < nEq; ++i)
     {
+        if (looping && wait <= 0 && ! fire)
+        {
+            fire = true;
+            wait = period;
+        }
+        if (fire)
+        {
+            stack.trigger (kickP, slots);
+            fire = false;
+            if (looping && wait <= 0)
+                wait = period;
+        }
         float layer[k1x::kMixLayers];
         stack.tickInto (layer);
         for (int L = 0; L < k1x::kMixLayers; ++L)
             layerScratch.setSample (L, i, layer[L]);
+        if (looping && wait > 0)
+            --wait;
     }
+    loopWait = wait;
     for (int L = 0; L < k1x::kMixLayers; ++L)
     {
         float* ptrs[1] = { layerScratch.getWritePointer (L) };

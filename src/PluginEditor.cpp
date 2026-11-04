@@ -883,12 +883,46 @@ K1XAudioProcessorEditor::K1XAudioProcessorEditor (K1XAudioProcessor& p)
 
     standalone = juce::PluginHostType::getPluginLoadedAs() == juce::AudioProcessor::wrapperType_Standalone;
     playBtn.setClickingTogglesState (false);
-    playBtn.onClick = [this] { proc.requestTrigger(); };
+    playBtn.onClick = [this]
+    {
+        if (loopBtn.getToggleState())
+        {
+            const bool on = ! playBtn.getToggleState();
+            commitLoopBpm();
+            proc.setLooping (on, loopBpm);
+            playBtn.setToggleState (on, juce::dontSendNotification);
+        }
+        else
+        {
+            proc.requestTrigger();
+        }
+    };
     exportBtn.setClickingTogglesState (false);
     exportBtn.onClick = [this] { exportWav(); };
+    loopBtn.setClickingTogglesState (true);
+    loopBtn.onClick = [this]
+    {
+        if (! loopBtn.getToggleState() && playBtn.getToggleState())
+        {
+            proc.setLooping (false, loopBpm);
+            playBtn.setToggleState (false, juce::dontSendNotification);
+        }
+    };
+    bpmBox.setText ("140", juce::dontSendNotification);
+    bpmBox.setInputRestrictions (3, "0123456789");
+    bpmBox.setJustification (juce::Justification::centred);
+    bpmBox.setColour (juce::TextEditor::textColourId, kMetal);
+    bpmBox.setColour (juce::TextEditor::backgroundColourId, kDark);
+    bpmBox.setColour (juce::TextEditor::outlineColourId, juce::Colours::transparentBlack);
+    bpmBox.onReturnKey = [this] { commitLoopBpm(); };
+    bpmBox.onFocusLost = [this] { commitLoopBpm(); };
     content.addAndMakeVisible (playBtn);
+    content.addAndMakeVisible (loopBtn);
+    content.addAndMakeVisible (bpmBox);
     content.addAndMakeVisible (exportBtn);
     playBtn.setVisible (standalone);
+    loopBtn.setVisible (standalone);
+    bpmBox.setVisible (standalone);
     exportBtn.setVisible (standalone);
 
     eqBtn.setClickingTogglesState (true);
@@ -1074,8 +1108,10 @@ void K1XAudioProcessorEditor::layoutContent()
     if (standalone)
     {
         tools.removeFromLeft (8);
-        playBtn.setBounds (tools.removeFromLeft (64).reduced (0, 2));
-        exportBtn.setBounds (tools.removeFromLeft (96).reduced (0, 2));
+        playBtn.setBounds (tools.removeFromLeft (56).reduced (0, 2));
+        loopBtn.setBounds (tools.removeFromLeft (52).reduced (0, 2));
+        bpmBox.setBounds (tools.removeFromLeft (44).reduced (0, 4));
+        exportBtn.setBounds (tools.removeFromLeft (88).reduced (0, 2));
     }
 
     fxPage.setBounds (r);
@@ -1569,8 +1605,19 @@ void K1XAudioProcessorEditor::openAbout()
     aboutBox.toFront (true);
 }
 
+void K1XAudioProcessorEditor::commitLoopBpm()
+{
+    const float v = bpmBox.getText().getFloatValue();
+    if (v >= 40.f && v <= 240.f)
+        loopBpm = v;
+    bpmBox.setText (juce::String (juce::roundToInt (loopBpm)), juce::dontSendNotification);
+    if (playBtn.getToggleState())
+        proc.setLooping (true, loopBpm);
+}
+
 void K1XAudioProcessorEditor::exportWav()
 {
+    commitLoopBpm();
     chooser = std::make_unique<juce::FileChooser> ("Export kick",
                                                    juce::File::getSpecialLocation (juce::File::userDesktopDirectory)
                                                        .getChildFile ("K1X.wav"),
@@ -1590,9 +1637,21 @@ void K1XAudioProcessorEditor::exportWav()
                                   file = file.withFileExtension (".wav");
 
                               const double sr = 44100.0;
-                              const int n = 44100 * 4; // kick + ~2 s FX tail
-                              juce::AudioBuffer<float> buf (2, n);
-                              safe->proc.renderWithPost (buf, sr);
+                              juce::AudioBuffer<float> buf (2, 1);
+                              int start = 0;
+                              int count = 0;
+                              if (safe->loopBtn.getToggleState())
+                              {
+                                  safe->proc.renderBars (buf, sr, safe->loopBpm, 2);
+                                  count = buf.getNumSamples() / 2;
+                                  start = count;
+                              }
+                              else
+                              {
+                                  count = 44100 * 4; // kick + ~2 s FX tail
+                                  buf.setSize (2, count);
+                                  safe->proc.renderWithPost (buf, sr);
+                              }
 
                               juce::WavAudioFormat fmt;
                               std::unique_ptr<juce::OutputStream> out (file.createOutputStream());
@@ -1603,6 +1662,6 @@ void K1XAudioProcessorEditor::exportWav()
                                                     .withNumChannels (2)
                                                     .withBitsPerSample (16);
                               if (auto w = fmt.createWriterFor (out, opts))
-                                  w->writeFromAudioSampleBuffer (buf, 0, n);
+                                  w->writeFromAudioSampleBuffer (buf, start, count);
                           });
 }

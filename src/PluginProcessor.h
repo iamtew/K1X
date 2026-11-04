@@ -48,6 +48,8 @@ public:
     void renderShot (float* dest, int n, double sampleRate) const;
     // Post-EQ, pre-fader. chan[layer] is n samples, owned by the caller.
     void renderLayerChans (float* const* chan, int n, double sampleRate) const;
+    void renderBars (juce::AudioBuffer<float>& dest, double sampleRate, float bpm, int bars);
+    void setLooping (bool on, float bpm);
     void renderWithPost (juce::AudioBuffer<float>& dest, double sampleRate);
     k1x::EqAnalyser& eqAnalyser() { return analyser; }
     k1x::OutputMeter& outputMeter() { return meter; }
@@ -74,6 +76,11 @@ private:
     int lengthChoice() const;
     void fillSlots (k1x::SlotVoiceParams* out, float kickHz, float lengthSec) const;
     void fillAmps (float* out) const;
+
+    std::atomic<bool> loopOn { false };
+    std::atomic<float> loopBpm { 140.f };
+    std::atomic<bool> loopRestart { false };
+    int loopWait = 0;
 
     k1x::LayerStack stack;
     k1x::OutputMeter layerMeters[k1x::kMixLayers];
