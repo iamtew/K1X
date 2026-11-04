@@ -8,6 +8,7 @@
 - Sweep layer: falling sine (Start, Drop octaves, Decay). Optional tanh Drive. LP Tone. Length/Attack like Noise.
 - Sample layer: message thread loads the file; audio thread reads a prepared buffer with linear resample, HP/LP, Pre, and Length. No I/O on the audio thread.
 - Style also scales pitch-decay and amp-decay. Knobs stay independent.
+- Vel (default 0) scales Click, Punch, Decay, and extra-layer gains by `1 - velAmt * (1 - vel/127)`. Velocity 127 is identity. Play / export / loop use 127.
 - Attack / Punch maps to 0.3–50 ms amp attack, optional A.Hold at 1, then exponential decay. Hold 0 = old attack-then-fall. Waveform overlay matches Punch time; it does not skip samples. The preview is the summed layers (post layer EQ, mute/solo/gain, master), before post FX.
 - Drive: `tanh(x * (1 + drive * 4))`. Drive 0 stays 1× (old `tanh(x)`). Drive > 0 interpolates 2× then tanh.
 - Post Dist is the same laws at 2× (`juce::dsp::Oversampling` half-band) when Dist is on; skipped when Dist is off.

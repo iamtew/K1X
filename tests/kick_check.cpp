@@ -83,6 +83,9 @@ int main()
         assert (std::abs (db6 - 6.f) < 0.25f);
     }
 
+    assert (std::abs (k1x::velScale (127, 1.f) - 1.f) < 1e-6f);
+    assert (std::abs (k1x::velScale (0, 1.f) - 0.f) < 1e-6f);
+    assert (std::abs (k1x::velScale (64, 0.f) - 1.f) < 1e-6f);
     assert (std::abs (k1x::punchToAttackMs (0.f) - 0.3f) < 1e-4f);
     assert (std::abs (k1x::punchToAttackMs (1.f) - 50.f) < 1e-4f);
 

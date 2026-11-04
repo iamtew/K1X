@@ -83,6 +83,7 @@ private:
     void fillSlots (k1x::SlotVoiceParams* out, float kickHz, float lengthSec) const;
     void fillAmps (float* out) const;
     void fillSends (float* out) const;
+    void applyVelocity (k1x::KickVoice::Params& p, float* amp, int vel) const;
 
     std::atomic<bool> loopOn { false };
     std::atomic<float> loopBpm { 140.f };

@@ -14,6 +14,20 @@ inline float punchToAttackMs (float punch)
     return kPunchMinMs + punch * (kPunchMaxMs - kPunchMinMs);
 }
 
+// vel 127 or amt 0 = 1. Softer hits shrink Click / Punch / Decay / extra layers.
+inline float velScale (int vel, float amt)
+{
+    if (vel < 0)
+        vel = 0;
+    if (vel > 127)
+        vel = 127;
+    if (amt < 0.f)
+        amt = 0.f;
+    if (amt > 1.f)
+        amt = 1.f;
+    return 1.f - amt * (1.f - (float) vel / 127.f);
+}
+
 // Analog-ish kick: sine body with pitch drop + noise click, then drive/filters.
 // Style only changes a few envelope/click/harmonic coeffs. Not a circuit model.
 struct KickVoice

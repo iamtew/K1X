@@ -23,6 +23,7 @@ constexpr const char* style      = "style";
 constexpr const char* bodyShape  = "bodyShape";
 constexpr const char* harm       = "harm";
 constexpr const char* fm         = "fm";
+constexpr const char* velAmt     = "velAmt";
 
 // Layer 0 is the kick. Slots 1..3 are optional voices. Kick has no type.
 inline constexpr int layerCount = 4;

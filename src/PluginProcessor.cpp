@@ -333,6 +333,18 @@ void K1XAudioProcessor::fillAmps (float* out) const
     k1x::layerAmps (gain, mute, solo, enabled, flip, out);
 }
 
+void K1XAudioProcessor::applyVelocity (k1x::KickVoice::Params& p, float* amp, int vel) const
+{
+    const float s = k1x::velScale (vel, raw (ParamID::velAmt));
+    p.click *= s;
+    p.punch *= s;
+    p.decay *= s;
+    if (amp == nullptr)
+        return;
+    for (int i = 1; i < k1x::kMixLayers; ++i)
+        amp[i] *= s;
+}
+
 void K1XAudioProcessor::fillSends (float* out) const
 {
     for (int i = 0; i < k1x::kMixLayers; ++i)
@@ -344,6 +356,7 @@ void K1XAudioProcessor::renderLayerChans (float* const* chan, int n, double samp
     auto kickP = currentParams();
     k1x::SlotVoiceParams slots[ParamID::slotCount];
     fillSlots (slots, kickP.tuneHz, kickP.lengthSec);
+    applyVelocity (kickP, nullptr, 127);
 
     k1x::LayerStack local;
     local.prepare (sampleRate);
@@ -408,6 +421,7 @@ void K1XAudioProcessor::renderBars (juce::AudioBuffer<float>& dest, double sampl
     fillSlots (slotParams, kickP.tuneHz, kickP.lengthSec);
     float amp[k1x::kMixLayers];
     fillAmps (amp);
+    applyVelocity (kickP, amp, 127);
     float sendAmt[k1x::kMixLayers];
     fillSends (sendAmt);
 
@@ -522,11 +536,13 @@ void K1XAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mi
 
     bool trig = pendingTrig.exchange (false, std::memory_order_relaxed);
     int midiNote = -1;
+    int midiVel = 127;
     for (const auto meta : midi)
         if (meta.getMessage().isNoteOn())
         {
             trig = true;
             midiNote = meta.getMessage().getNoteNumber();
+            midiVel = meta.getMessage().getVelocity();
         }
     midi.clear();
 
@@ -547,6 +563,7 @@ void K1XAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mi
 
     float amp[k1x::kMixLayers];
     fillAmps (amp);
+    applyVelocity (kickP, amp, midiNote >= 0 ? midiVel : 127);
     float sendAmt[k1x::kMixLayers];
     fillSends (sendAmt);
     auto* l = buffer.getWritePointer (0);
