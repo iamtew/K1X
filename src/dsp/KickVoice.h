@@ -29,6 +29,9 @@ struct KickVoice
         float ampHold    = 0.f;    // seconds at 1 after punch, before decay
         float decay      = 0.35f;  // amp decay seconds
         float drive      = 0.2f;
+        int   bodyShape  = 0;      // 0=sine 1=triangle
+        float harm       = 0.f;    // extra 2nd + a little 3rd; Style still adds its 2nd
+        float fm         = 0.f;    // one-knob FM index, 0 = off
         float hpfHz      = 25.f;
         float toneHz     = 3500.f;
         float lo         = 0.55f;  // 0.5 = flat, 0/1 = ±12 dB
@@ -108,7 +111,18 @@ struct KickVoice
             phase -= std::floor (phase);
         const float twopi = 6.283185307179586f;
         const float ph = (float) (phase * (double) twopi);
-        const float body = std::sin (ph) + harmonic * std::sin (ph + ph);
+        const float fmPh = ph + params.fm * std::sin (ph);
+        float carrier = std::sin (fmPh);
+        if (params.bodyShape == 1)
+        {
+            float s = std::sin (fmPh);
+            if (s < -1.f) s = -1.f;
+            if (s > 1.f) s = 1.f;
+            carrier = 0.636619772f * std::asin (s);
+        }
+        // Style 2nd-harmonic stays even when Harm is 0. Harm knob also adds a little 3rd.
+        const float h2 = harmonic + params.harm;
+        const float body = carrier + h2 * std::sin (ph + ph) + params.harm * 0.35f * std::sin (ph * 3.f);
 
         const float attSec = (float) attackN / (float) sr;
         float amp = 0.f;

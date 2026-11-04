@@ -252,6 +252,9 @@ k1x::KickVoice::Params K1XAudioProcessor::currentParams() const
     p.lengthSec  = k1x::lengthSeconds (lengthChoice(), hostBpm());
     p.delayMs    = raw (ParamID::lyDelay[0]);
     p.style      = juce::roundToInt (raw (ParamID::style));
+    p.bodyShape  = juce::roundToInt (raw (ParamID::bodyShape));
+    p.harm       = raw (ParamID::harm);
+    p.fm         = raw (ParamID::fm);
     return p;
 }
 

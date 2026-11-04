@@ -13,10 +13,13 @@ Kick one-shot (909 default). MIDI note-on retriggers and sets body pitch from th
 - **A.Hold** — how long the amp sits at 1 after Punch, before Decay. 0 is the old attack-then-fall.
 - **Decay** — amp tail.
 - **Drive** — tanh saturation.
+- **Harm** — extra 2nd harmonic plus a little 3rd. 707/Hard still add their own 2nd on top. 0 is sine body.
+- **FM** — a little phase modulation of the body. 0 is off.
 - **HPF** — rumble cut.
 - **Tone** — low-pass.
 - **Lo / Hi** — shelves (±12 dB around centre).
 - **Style** — 909, 808, 707, Tight, Hard. Changes click, pitch/amp envelopes, and a bit of harmonic. Does not reset knobs.
+- **Shape** — Sine (default) or triangle body.
 - **Length** — Free, or trim to 1/4, 1/8, 1/16 of host BPM (120 if the host has no tempo).
 
 ## Layers

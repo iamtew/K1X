@@ -111,6 +111,27 @@ int main()
     }
 
     {
+        k1x::KickVoice::Params sh;
+        sh.click = 0.f;
+        sh.drive = 0.f;
+        std::vector<float> sine (2048), tri (2048), harm (2048);
+        k1x::renderKick (sine.data(), (int) sine.size(), 44100.0, sh);
+        sh.bodyShape = 1;
+        k1x::renderKick (tri.data(), (int) tri.size(), 44100.0, sh);
+        float d = 0.f;
+        for (int i = 0; i < (int) sine.size(); ++i)
+            d = std::max (d, std::abs (sine[(size_t) i] - tri[(size_t) i]));
+        assert (d > 0.01f);
+        sh.bodyShape = 0;
+        sh.harm = 0.8f;
+        k1x::renderKick (harm.data(), (int) harm.size(), 44100.0, sh);
+        d = 0.f;
+        for (int i = 0; i < (int) sine.size(); ++i)
+            d = std::max (d, std::abs (sine[(size_t) i] - harm[(size_t) i]));
+        assert (d > 0.01f);
+    }
+
+    {
         k1x::KickVoice::Params a;
         a.punch = 0.f;
         std::vector<float> fast (44100), slow (44100);

@@ -1,6 +1,6 @@
 # DSP notes
 
-- Body: sine (+ 2nd harmonic on 707/Hard). Start frequency = Tune × 2^Drop. P.Hold keeps that start, then exponential fall to Tune (0 = old one-stage).
+- Body: sine or triangle. Harm knob is extra 2nd + 0.35× 3rd; 707/Hard still add 0.08 / 0.25 of 2nd. FM is `sin(ph + fm * sin(ph))`. Start frequency = Tune × 2^Drop. P.Hold keeps that start, then exponential fall to Tune (0 = old one-stage).
 - Click: high-passed LCG noise. Style sets click time and gain (909 ≈ 4 ms).
 - Noise layer: same LCG, then White / Pink (Kellet 3-pole) / Brown (leaky integrator). Pre-delay, optional attack fade, decay, and a length window (0 = Auto). HP then LP.
 - Bass layer: sine at Tune×2^(semitones/12), optional Drop (octaves, same Decay as amp), tanh Drive, HP then LP, Length/Attack like Noise.
