@@ -204,6 +204,9 @@ int main()
 
     assert (k1x::factoryPresetCount >= 60);
     assert (k1x::factoryBankOk());
+    assert (k1x::factoryStackIndex ("Punch Stack") == 0);
+    assert (k1x::factoryStackIndex ("Punch") < 0);
+    assert (k1x::stackFor (0).layer[0].type == 1);
 
     std::vector<std::string> tags { "0.0.2", "v0.0.1" };
     assert (k1x::newestNewerTag (tags, "0.0.1") == "0.0.2");

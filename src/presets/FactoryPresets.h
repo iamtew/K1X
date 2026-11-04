@@ -172,6 +172,79 @@ constexpr bool factorySame (const char* a, const char* b)
     return *a == *b;
 }
 
+// Dressed twin of factoryPresets[i]. type 0 is unused.
+// 1 bass: semitones, decay, drive, hpf. 2 noise: decay, hpf, lpf.
+// 3 click: hz, ms, tone. 4 sweep: start hz, octaves, decay.
+struct FactoryLayer
+{
+    int type;
+    float a, b, c, d;
+    float gain, delayMs;
+};
+
+struct FactoryStack
+{
+    FactoryLayer layer[2];
+};
+
+inline constexpr FactoryStack stackRecipes[6] = {
+    { { { 1, -12.f, 0.70f, 0.12f, 18.f, 0.75f, 0.f },
+        { 3, 2400.f, 5.f,  0.35f, 0.f,  0.40f, 1.f } } },
+    { { { 1, -12.f, 0.90f, 0.08f, 16.f, 0.80f, 0.f },
+        { 2, 0.18f, 400.f, 5000.f, 0.f, 0.30f, 4.f } } },
+    { { { 4, 280.f, 2.2f,  0.07f, 0.f,  0.55f, 0.f },
+        { 2, 0.06f, 1500.f, 8000.f, 0.f, 0.28f, 0.f } } },
+    { { { 1, -19.f, 1.10f, 0.20f, 14.f, 0.70f, 2.f },
+        { 0, 0.f, 0.f, 0.f, 0.f, 0.f, 0.f } } },
+    { { { 3, 3200.f, 3.5f, 0.20f, 0.f,  0.50f, 0.f },
+        { 2, 0.10f, 900.f, 6500.f, 0.f, 0.33f, 3.f } } },
+    { { { 1, -7.f,  0.45f, 0.25f, 28.f, 0.65f, 0.f },
+        { 4, 500.f, 3.0f,  0.05f, 0.f,  0.42f, 0.f } } },
+};
+
+inline constexpr FactoryStack stackFor (int index)
+{
+    return stackRecipes[index % 6];
+}
+
+constexpr bool endsWith (const char* s, const char* suf)
+{
+    int n = 0, m = 0;
+    if (s == nullptr || suf == nullptr)
+        return false;
+    while (s[n] != '\0')
+        ++n;
+    while (suf[m] != '\0')
+        ++m;
+    if (n < m)
+        return false;
+    for (int i = 0; i < m; ++i)
+        if (s[n - m + i] != suf[i])
+            return false;
+    return true;
+}
+
+inline int factoryStackIndex (const char* name)
+{
+    if (! endsWith (name, " Stack"))
+        return -1;
+    int n = 0;
+    while (name[n] != '\0')
+        ++n;
+    const int baseN = n - 6;
+    for (int i = 0; i < factoryPresetCount; ++i)
+    {
+        const char* b = factoryPresets[i].name;
+        int j = 0;
+        for (; j < baseN; ++j)
+            if (b[j] == '\0' || b[j] != name[j])
+                break;
+        if (j == baseN && b[j] == '\0')
+            return i;
+    }
+    return -1;
+}
+
 constexpr const FactoryPreset* findFactoryPreset (const char* name)
 {
     for (int i = 0; i < factoryPresetCount; ++i)
@@ -273,6 +346,34 @@ constexpr bool factoryBankOk()
         if (e.type2 < 1 || e.type2 > 5 || ! factoryInRange (e.hz2, 20.f, 20000.f)
             || ! factoryInRange (e.db2, -12.f, 12.f) || ! factoryInRange (e.q2, 0.1f, 10.f))
             return false;
+    }
+    for (int i = 0; i < factoryPresetCount; ++i)
+    {
+        if (endsWith (factoryPresets[i].name, " Stack"))
+            return false;
+        const FactoryStack stack = stackFor (i);
+        if (stack.layer[0].type <= 0)
+            return false;
+        for (const FactoryLayer& L : stack.layer)
+        {
+            if (L.type == 0)
+                continue;
+            if (L.type < 1 || L.type > 4 || ! factoryInRange (L.gain, 0.f, 1.f)
+                || ! factoryInRange (L.delayMs, 0.f, 40.f))
+                return false;
+            if (L.type == 1 && (! factoryInRange (L.a, -24.f, 12.f) || ! factoryInRange (L.b, 0.05f, 2.f)
+                                || ! factoryInRange (L.c, 0.f, 1.f) || ! factoryInRange (L.d, 10.f, 200.f)))
+                return false;
+            if (L.type == 2 && (! factoryInRange (L.a, 0.02f, 1.5f) || ! factoryInRange (L.b, 80.f, 8000.f)
+                                || ! factoryInRange (L.c, 200.f, 16000.f)))
+                return false;
+            if (L.type == 3 && (! factoryInRange (L.a, 200.f, 8000.f) || ! factoryInRange (L.b, 0.5f, 40.f)
+                                || ! factoryInRange (L.c, 0.f, 1.f)))
+                return false;
+            if (L.type == 4 && (! factoryInRange (L.a, 40.f, 4000.f) || ! factoryInRange (L.b, 0.f, 5.f)
+                                || ! factoryInRange (L.c, 0.02f, 0.5f)))
+                return false;
+        }
     }
     return true;
 }

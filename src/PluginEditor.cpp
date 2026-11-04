@@ -34,6 +34,7 @@ constexpr int kMenuSaveAs = 3;
 constexpr int kMenuExport = 4;
 constexpr int kMenuImport = 5;
 constexpr int kMenuFactory = 1000;
+constexpr int kMenuStack = 3000;
 constexpr int kMenuUser = 10000;
 
 juce::Colour layerColour (int type)
@@ -1385,8 +1386,11 @@ void K1XAudioProcessorEditor::contentMouseUp (const juce::MouseEvent& e)
 void K1XAudioProcessorEditor::refreshPatchName()
 {
     const auto name = proc.patchName();
-    if (const auto* preset = k1x::findFactoryPreset (name.toRawUTF8()))
-        patchBar.setText (juce::String (preset->category) + " / " + name);
+    const int stack = k1x::factoryStackIndex (name.toRawUTF8());
+    if (stack >= 0)
+        patchBar.setText ("Multi / " + juce::String (k1x::factoryPresets[stack].category) + " / " + name);
+    else if (const auto* preset = k1x::findFactoryPreset (name.toRawUTF8()))
+        patchBar.setText ("Single / " + juce::String (preset->category) + " / " + name);
     else
         patchBar.setText (name);
 }
@@ -1418,27 +1422,37 @@ void K1XAudioProcessorEditor::openPatchMenu()
     m.addItem (kMenuImport, "Import...");
     m.addSeparator();
 
-    juce::String cat;
-    juce::PopupMenu sub;
-    for (int i = 0; i < k1x::factoryPresetCount; ++i)
+    auto fillBank = [&] (juce::PopupMenu& parent, bool stack)
     {
-        const auto& preset = k1x::factoryPresets[i];
-        const juce::String next (preset.category);
-        if (next != cat)
+        juce::String cat;
+        juce::PopupMenu sub;
+        for (int i = 0; i < k1x::factoryPresetCount; ++i)
         {
-            if (sub.getNumItems() > 0)
-                m.addSubMenu (cat, sub);
-            sub = juce::PopupMenu();
-            cat = next;
+            const auto& preset = k1x::factoryPresets[i];
+            const juce::String next (preset.category);
+            if (next != cat)
+            {
+                if (sub.getNumItems() > 0)
+                    parent.addSubMenu (cat, sub);
+                sub = juce::PopupMenu();
+                cat = next;
+            }
+            const juce::String label = stack ? juce::String (preset.name) + " Stack" : juce::String (preset.name);
+            sub.addItem ((stack ? kMenuStack : kMenuFactory) + i, label, true, cur == label);
         }
-        sub.addItem (kMenuFactory + i, preset.name, true, cur == preset.name);
-    }
-    if (sub.getNumItems() > 0)
-        m.addSubMenu (cat, sub);
+        if (sub.getNumItems() > 0)
+            parent.addSubMenu (cat, sub);
+    };
+    juce::PopupMenu singleMenu, multiMenu;
+    fillBank (singleMenu, false);
+    fillBank (multiMenu, true);
+    m.addSubMenu ("Single layer", singleMenu);
+    m.addSubMenu ("Multi layer", multiMenu);
 
     juce::StringArray userOnly;
     for (const auto& name : proc.patchNames())
-        if (k1x::findFactoryPreset (name.toRawUTF8()) == nullptr)
+        if (k1x::findFactoryPreset (name.toRawUTF8()) == nullptr
+            && k1x::factoryStackIndex (name.toRawUTF8()) < 0)
             userOnly.add (name);
     if (userOnly.size() > 0)
     {
@@ -1471,6 +1485,12 @@ void K1XAudioProcessorEditor::openPatchMenu()
                              const int i = result - kMenuUser;
                              if (juce::isPositiveAndBelow (i, userOnly.size()))
                                  safe->proc.loadPatchByName (userOnly[i]);
+                         }
+                         else if (result >= kMenuStack)
+                         {
+                             const int i = result - kMenuStack;
+                             if (juce::isPositiveAndBelow (i, k1x::factoryPresetCount))
+                                 safe->proc.loadPatchByName (juce::String (k1x::factoryPresets[i].name) + " Stack");
                          }
                          else if (result >= kMenuFactory)
                          {

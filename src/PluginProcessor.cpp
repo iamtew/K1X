@@ -107,6 +107,53 @@ void applyFactory (K1XAudioProcessor& proc, const k1x::FactoryPreset& preset)
 
     apvts.state.setProperty (kPatchName, preset.name, nullptr);
 }
+
+void applyStackLayer (juce::AudioProcessorValueTreeState& apvts, int slot, const k1x::FactoryLayer& L, float gainNudge)
+{
+    if (L.type <= 0)
+        return;
+    const int layer = ParamID::layerOfSlot (slot);
+    setParam (apvts, ParamID::lyType[slot], (float) L.type);
+    setParam (apvts, ParamID::lyGain[layer], juce::jlimit (0.f, 1.f, L.gain + gainNudge));
+    setParam (apvts, ParamID::lyDelay[layer], L.delayMs);
+    if (L.type == ParamID::layerBass)
+    {
+        setParam (apvts, ParamID::lyBassTune[slot], L.a);
+        setParam (apvts, ParamID::lyBassDecay[slot], L.b);
+        setParam (apvts, ParamID::lyBassDrive[slot], L.c);
+        setParam (apvts, ParamID::lyBassHp[slot], L.d);
+    }
+    else if (L.type == ParamID::layerNoise)
+    {
+        setParam (apvts, ParamID::lyNoiseDecay[slot], L.a);
+        setParam (apvts, ParamID::lyNoiseHp[slot], L.b);
+        setParam (apvts, ParamID::lyNoiseLp[slot], L.c);
+    }
+    else if (L.type == ParamID::layerClick)
+    {
+        setParam (apvts, ParamID::lyClickPitch[slot], L.a);
+        setParam (apvts, ParamID::lyClickDecay[slot], L.b);
+        setParam (apvts, ParamID::lyClickTone[slot], L.c);
+    }
+    else if (L.type == ParamID::layerSweep)
+    {
+        setParam (apvts, ParamID::lySweepStart[slot], L.a);
+        setParam (apvts, ParamID::lySweepDrop[slot], L.b);
+        setParam (apvts, ParamID::lySweepDecay[slot], L.c);
+    }
+}
+
+void applyStack (K1XAudioProcessor& proc, int index)
+{
+    applyFactory (proc, k1x::factoryPresets[index]);
+    auto& apvts = proc.apvts;
+    const auto stack = k1x::stackFor (index);
+    const float nudge = 0.02f * (float) (index % 3);
+    applyStackLayer (apvts, 0, stack.layer[0], nudge);
+    applyStackLayer (apvts, 1, stack.layer[1], 0.f);
+    const juce::String name = juce::String (k1x::factoryPresets[index].name) + " Stack";
+    apvts.state.setProperty (kPatchName, name, nullptr);
+}
 } // namespace
 
 K1XAudioProcessor::K1XAudioProcessor()
@@ -422,6 +469,8 @@ juce::StringArray K1XAudioProcessor::patchNames() const
     juce::StringArray names;
     for (const auto& preset : k1x::factoryPresets)
         names.add (preset.name);
+    for (const auto& preset : k1x::factoryPresets)
+        names.add (juce::String (preset.name) + " Stack");
     juce::StringArray extra;
     for (const auto& entry : juce::RangedDirectoryIterator (patchesDir(), false, "*.k1xp"))
     {
@@ -469,6 +518,12 @@ bool K1XAudioProcessor::loadPatchByName (const juce::String& name)
             return false;
         apvts.replaceState (juce::ValueTree::fromXml (*xml));
         apvts.state.setProperty (kPatchName, stem, nullptr);
+        return true;
+    }
+    const int stackIndex = k1x::factoryStackIndex (stem.toRawUTF8());
+    if (stackIndex >= 0)
+    {
+        applyStack (*this, stackIndex);
         return true;
     }
     if (const auto* preset = k1x::findFactoryPreset (stem.toRawUTF8()))
