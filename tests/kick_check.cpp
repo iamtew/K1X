@@ -150,6 +150,56 @@ int main()
             nrg += buf[(size_t) i] * buf[(size_t) i];
         assert (nrg > 0.01f);
 
+        nz = {};
+        nz.delayMs = 20.f;
+        nz.lengthSec = 0.1f;
+        k1x::renderNoise (buf.data(), (int) buf.size(), 44100.0, nz);
+        pre = 0.f;
+        const int nzPre = (int) (0.015f * 44100.f);
+        for (int i = 0; i < nzPre; ++i)
+            pre = std::max (pre, std::abs (buf[(size_t) i]));
+        assert (pre < 1.0e-6f);
+        nrg = 0.f;
+        for (int i = (int) (0.025f * 44100.f); i < (int) (0.06f * 44100.f); ++i)
+            nrg += buf[(size_t) i] * buf[(size_t) i];
+        assert (nrg > 0.01f);
+
+        nz = {};
+        nz.decay = 1.f;
+        nz.lengthSec = 0.02f;
+        k1x::renderNoise (buf.data(), (int) buf.size(), 44100.0, nz);
+        float nzTail = 0.f;
+        for (int i = (int) (0.04f * 44100.f); i < (int) buf.size(); ++i)
+            nzTail = std::max (nzTail, std::abs (buf[(size_t) i]));
+        assert (nzTail < 1.0e-4f);
+
+        auto bandRatio = [&] (k1x::NoiseVoice::Params p)
+        {
+            p.hpfHz = 80.f;
+            p.lpfHz = 16000.f;
+            p.decay = 0.4f;
+            p.lengthSec = 0.2f;
+            k1x::renderNoise (buf.data(), (int) buf.size(), 44100.0, p);
+            float low = 0.f, high = 0.f, lp = 0.f, hp = 0.f;
+            const float cLow = 1.f - std::exp (-6.283185307179586f * 400.f / 44100.f);
+            const float cHigh = 1.f - std::exp (-6.283185307179586f * 4000.f / 44100.f);
+            const int n = (int) (0.2f * 44100.f);
+            for (int i = 0; i < n; ++i)
+            {
+                const float x = buf[(size_t) i];
+                lp += cLow * (x - lp);
+                low += lp * lp;
+                hp += cHigh * (x - hp);
+                const float hi = x - hp;
+                high += hi * hi;
+            }
+            return low / (high + 1.0e-12f);
+        };
+        k1x::NoiseVoice::Params whiteP, pinkP;
+        whiteP.type = k1x::NoiseVoice::white;
+        pinkP.type = k1x::NoiseVoice::pink;
+        assert (bandRatio (pinkP) > bandRatio (whiteP) * 1.2f);
+
         k1x::ClickVoice::Params ck;
         ck.decayMs = 5.f;
         ck.lengthSec = 0.f;

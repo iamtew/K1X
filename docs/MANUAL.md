@@ -17,6 +17,17 @@ Kick one-shot (909 default). MIDI note-on retriggers and sets body pitch from th
 - **Style** — 909, 808, 707, Tight, Hard. Changes click, pitch/amp envelopes, and a bit of harmonic. Does not reset knobs.
 - **Length** — Free, or trim to 1/4, 1/8, 1/16 of host BPM (120 if the host has no tempo).
 
+## Layers
+
+The rail next to the waveform adds Bass, Noise, Click, or Sweep on top of the kick. Each layer has gain/mute/solo/phase on Mix, a **Delay** (0–80 ms) before the hit, and its own EQ. Noise knobs:
+
+- **Type** — White, Pink, or Brown.
+- **Decay** — envelope inside the burst.
+- **Length** — how long the burst may speak (ms). Auto follows Decay, or the global Length snap when that is not Free.
+- **HPF / LPF** — band for the hiss.
+- **Pre** — same Delay, labeled here so the noise can sit after the beater.
+- **Attack** — fade-in after Pre (0–30 ms).
+
 **Volume** (title bar, right) — live master fader and a glance spectrum. Turns orange for ~800 ms if the output hits 0 dBFS.
 
 **Main / Effects** (title bar, next to the patch name) — chevrons or click to switch. Main is the kick. Effects is the send plus post EQ on one page.
