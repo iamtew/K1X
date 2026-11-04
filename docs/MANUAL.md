@@ -6,9 +6,11 @@ Kick one-shot (909 default). MIDI note-on retriggers and sets body pitch from th
 
 - **Tune** — body frequency.
 - **Drop** — how many octaves above Tune the pitch starts.
+- **P.Hold** — how long the pitch sits at Drop before it falls. 0 is the old one-stage fall.
 - **P.Decay** — how fast the pitch falls to Tune.
 - **Click** — noise attack.
 - **Attack / Punch** — amp attack time (0.3–50 ms, short = clickier). The waveform draws an Ableton-style fade wedge for that length; it is an indication, not a clip start trim.
+- **A.Hold** — how long the amp sits at 1 after Punch, before Decay. 0 is the old attack-then-fall.
 - **Decay** — amp tail.
 - **Drive** — tanh saturation.
 - **HPF** — rumble cut.

@@ -22,9 +22,11 @@ struct KickVoice
     {
         float tuneHz     = 50.f;
         float pitchDrop  = 1.5f;   // octaves above tune at t=0
+        float pitchHold  = 0.f;    // seconds at startHz before the fall
         float pitchDecay = 0.04f;  // seconds
         float click      = 0.4f;
         float punch      = 0.059f; // 0 = 0.3ms attack, 1 = 50ms (~3.2ms default)
+        float ampHold    = 0.f;    // seconds at 1 after punch, before decay
         float decay      = 0.35f;  // amp decay seconds
         float drive      = 0.2f;
         float hpfHz      = 25.f;
@@ -64,7 +66,7 @@ struct KickVoice
             attackN = 1;
 
         // ponytail: free length = ~8 decays then stop; snap length wins if set.
-        float life = ampDec * 8.f;
+        float life = ampDec * 8.f + params.ampHold;
         if (life < 0.05f)
             life = 0.05f;
         if (params.lengthSec > 0.f)
@@ -95,10 +97,12 @@ struct KickVoice
         }
 
         const double t = (double) pos / sr;
-        // Pitch envelope is roughly exponential down to the tuned fundamental.
+        // Pitch: hold at startHz, then exponential fall to Tune. Hold 0 = old shape.
         const float startHz = params.tuneHz * std::pow (2.f, params.pitchDrop);
-        const float freq = params.tuneHz
-            + (startHz - params.tuneHz) * std::exp ((float) (-t / (double) pitchDec));
+        const float tFall = (float) t - params.pitchHold;
+        const float freq = tFall <= 0.f
+            ? startHz
+            : params.tuneHz + (startHz - params.tuneHz) * std::exp (-tFall / pitchDec);
         phase += (double) freq / sr;
         if (phase >= 1.0)
             phase -= std::floor (phase);
@@ -106,11 +110,14 @@ struct KickVoice
         const float ph = (float) (phase * (double) twopi);
         const float body = std::sin (ph) + harmonic * std::sin (ph + ph);
 
+        const float attSec = (float) attackN / (float) sr;
         float amp = 0.f;
         if (pos < attackN)
             amp = (float) pos / (float) attackN;
+        else if ((float) t < attSec + params.ampHold)
+            amp = 1.f;
         else
-            amp = std::exp ((float) (-(t - (double) attackN / sr) / (double) ampDec));
+            amp = std::exp ((float) (-(t - (double) attSec - (double) params.ampHold) / (double) ampDec));
 
         // Click: HP noise burst, same attack as the body so sample 0 is not a pop.
         const float clickEnv = std::exp ((float) (-t / (double) clickTau));

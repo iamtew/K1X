@@ -86,6 +86,31 @@ int main()
     assert (std::abs (k1x::punchToAttackMs (1.f) - 50.f) < 1e-4f);
 
     {
+        k1x::KickVoice::Params h0;
+        h0.drive = 0.f;
+        h0.click = 0.f;
+        h0.punch = 0.f;
+        h0.pitchHold = 0.f;
+        h0.ampHold = 0.f;
+        std::vector<float> a (2048), b (2048);
+        k1x::renderKick (a.data(), (int) a.size(), 44100.0, h0);
+        h0.pitchHold = 0.05f;
+        k1x::renderKick (b.data(), (int) b.size(), 44100.0, h0);
+        float d = 0.f;
+        for (int i = 0; i < (int) a.size(); ++i)
+            d = std::max (d, std::abs (a[(size_t) i] - b[(size_t) i]));
+        assert (d > 0.01f);
+
+        h0.pitchHold = 0.f;
+        h0.ampHold = 0.08f;
+        k1x::renderKick (b.data(), (int) b.size(), 44100.0, h0);
+        d = 0.f;
+        for (int i = 0; i < (int) a.size(); ++i)
+            d = std::max (d, std::abs (a[(size_t) i] - b[(size_t) i]));
+        assert (d > 0.01f);
+    }
+
+    {
         k1x::KickVoice::Params a;
         a.punch = 0.f;
         std::vector<float> fast (44100), slow (44100);

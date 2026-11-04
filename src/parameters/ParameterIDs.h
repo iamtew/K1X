@@ -6,9 +6,11 @@ inline constexpr int eqBandCount = 5;
 
 constexpr const char* tune       = "tune";
 constexpr const char* pitchDrop  = "pitchDrop";
+constexpr const char* pitchHold  = "pitchHold";
 constexpr const char* pitchDecay = "pitchDecay";
 constexpr const char* click      = "click";
 constexpr const char* punch      = "punch";
+constexpr const char* ampHold    = "ampHold";
 constexpr const char* decay      = "decay";
 constexpr const char* drive      = "drive";
 constexpr const char* hpf        = "hpf";

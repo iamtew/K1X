@@ -1,6 +1,6 @@
 # DSP notes
 
-- Body: sine (+ 2nd harmonic on 707/Hard). Start frequency = Tune × 2^Drop, exponential fall to Tune.
+- Body: sine (+ 2nd harmonic on 707/Hard). Start frequency = Tune × 2^Drop. P.Hold keeps that start, then exponential fall to Tune (0 = old one-stage).
 - Click: high-passed LCG noise. Style sets click time and gain (909 ≈ 4 ms).
 - Noise layer: same LCG, then White / Pink (Kellet 3-pole) / Brown (leaky integrator). Pre-delay, optional attack fade, decay, and a length window (0 = Auto). HP then LP.
 - Bass layer: sine at Tune×2^(semitones/12), optional Drop (octaves, same Decay as amp), tanh Drive, HP then LP, Length/Attack like Noise.
@@ -8,7 +8,7 @@
 - Sweep layer: falling sine (Start, Drop octaves, Decay). Optional tanh Drive. LP Tone. Length/Attack like Noise.
 - Sample layer: message thread loads the file; audio thread reads a prepared buffer with linear resample, HP/LP, Pre, and Length. No I/O on the audio thread.
 - Style also scales pitch-decay and amp-decay. Knobs stay independent.
-- Attack / Punch maps to 0.3–50 ms amp attack, then exponential decay. Waveform overlay matches that time; it does not skip samples. The preview is the summed layers (post layer EQ, mute/solo/gain, master), before post FX.
+- Attack / Punch maps to 0.3–50 ms amp attack, optional A.Hold at 1, then exponential decay. Hold 0 = old attack-then-fall. Waveform overlay matches Punch time; it does not skip samples. The preview is the summed layers (post layer EQ, mute/solo/gain, master), before post FX.
 - Drive: `tanh(x * (1 + drive * 4))`.
 - Filters: one-pole HP then LP. Lo/Hi are ±12 dB shelves around 0.5.
 - Length snap hard-gates with a 25 ms fade so the cut is not a click.

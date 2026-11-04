@@ -49,6 +49,18 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout
                                                         "Tune", tuneR, 50.f, hzAttrs (tuneR)));
     layout.add (std::make_unique<AudioParameterFloat> (ParameterID { ParamID::pitchDrop, 1 },
                                                         "Drop", dropR, 1.5f, pct (dropR)));
+    auto pHoldR = NormalisableRange<float> (0.f, 0.15f, 0.001f, 0.4f);
+    layout.add (std::make_unique<AudioParameterFloat> (
+        ParameterID { ParamID::pitchHold, 1 }, "P.Hold", pHoldR, 0.f,
+        AudioParameterFloatAttributes()
+            .withStringFromValueFunction ([] (float v, int)
+            {
+                return String (roundToInt (v * 1000.f)) + " ms";
+            })
+            .withValueFromStringFunction ([] (const String& t)
+            {
+                return jlimit (0.f, 0.15f, t.getFloatValue() * 0.001f);
+            })));
     layout.add (std::make_unique<AudioParameterFloat> (ParameterID { ParamID::pitchDecay, 1 },
                                                         "P.Decay", pDecR, 0.04f, pct (pDecR)));
     layout.add (std::make_unique<AudioParameterFloat> (ParameterID { ParamID::click, 1 },
@@ -64,6 +76,18 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout
             {
                 const float ms = jlimit (k1x::kPunchMinMs, k1x::kPunchMaxMs, t.getFloatValue());
                 return (ms - k1x::kPunchMinMs) / (k1x::kPunchMaxMs - k1x::kPunchMinMs);
+            })));
+    auto aHoldR = NormalisableRange<float> (0.f, 0.5f, 0.001f, 0.4f);
+    layout.add (std::make_unique<AudioParameterFloat> (
+        ParameterID { ParamID::ampHold, 1 }, "A.Hold", aHoldR, 0.f,
+        AudioParameterFloatAttributes()
+            .withStringFromValueFunction ([] (float v, int)
+            {
+                return String (roundToInt (v * 1000.f)) + " ms";
+            })
+            .withValueFromStringFunction ([] (const String& t)
+            {
+                return jlimit (0.f, 0.5f, t.getFloatValue() * 0.001f);
             })));
     layout.add (std::make_unique<AudioParameterFloat> (ParameterID { ParamID::decay, 1 },
                                                         "Decay", decR, 0.35f, pct (decR)));

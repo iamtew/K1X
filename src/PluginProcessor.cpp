@@ -237,9 +237,11 @@ k1x::KickVoice::Params K1XAudioProcessor::currentParams() const
     k1x::KickVoice::Params p;
     p.tuneHz     = raw (ParamID::tune);
     p.pitchDrop  = raw (ParamID::pitchDrop);
+    p.pitchHold  = raw (ParamID::pitchHold);
     p.pitchDecay = raw (ParamID::pitchDecay);
     p.click      = raw (ParamID::click);
     p.punch      = raw (ParamID::punch);
+    p.ampHold    = raw (ParamID::ampHold);
     p.decay      = raw (ParamID::decay);
     p.drive      = raw (ParamID::drive);
     p.hpfHz      = raw (ParamID::hpf);

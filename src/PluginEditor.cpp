@@ -9,7 +9,7 @@
 namespace
 {
 constexpr int kEditorW = 720;
-constexpr int kEditorH = 460;
+constexpr int kEditorH = 530;
 constexpr const char* kPageNames[] = { "Main", "Effects" };
 constexpr int kPageCount = 2;
 constexpr int kPad = 8;
@@ -910,7 +910,7 @@ K1XAudioProcessorEditor::K1XAudioProcessorEditor (K1XAudioProcessor& p)
     content.addAndMakeVisible (wave);
 
     content.addAndMakeVisible (rail);
-    for (int i = 0; i < 12; ++i)
+    for (int i = 0; i < 18; ++i)
     {
         auto* k = knobs.add (new Knob (proc.apvts, ParamID::tune, "Tune"));
         content.addAndMakeVisible (k);
@@ -1024,9 +1024,10 @@ K1XAudioProcessorEditor::K1XAudioProcessorEditor (K1XAudioProcessor& p)
     content.addChildComponent (aboutBox);
     aboutBox.setVisible (false);
 
-    for (auto* id : { ParamID::tune, ParamID::pitchDrop, ParamID::pitchDecay, ParamID::click,
-                      ParamID::punch, ParamID::decay, ParamID::drive, ParamID::hpf, ParamID::tone,
-                      ParamID::lo, ParamID::hi, ParamID::level, ParamID::length, ParamID::style })
+    for (auto* id : { ParamID::tune, ParamID::pitchDrop, ParamID::pitchHold, ParamID::pitchDecay,
+                      ParamID::click, ParamID::punch, ParamID::ampHold, ParamID::decay, ParamID::drive,
+                      ParamID::hpf, ParamID::tone, ParamID::lo, ParamID::hi, ParamID::level,
+                      ParamID::length, ParamID::style })
         proc.apvts.addParameterListener (id, this);
     eachLayerEqId ([this] (const char* id) { proc.apvts.addParameterListener (id, this); });
     eachLayerVoiceId ([this] (const char* id) { proc.apvts.addParameterListener (id, this); });
@@ -1049,9 +1050,10 @@ K1XAudioProcessorEditor::K1XAudioProcessorEditor (K1XAudioProcessor& p)
 K1XAudioProcessorEditor::~K1XAudioProcessorEditor()
 {
     stopTimer();
-    for (auto* id : { ParamID::tune, ParamID::pitchDrop, ParamID::pitchDecay, ParamID::click,
-                      ParamID::punch, ParamID::decay, ParamID::drive, ParamID::hpf, ParamID::tone,
-                      ParamID::lo, ParamID::hi, ParamID::level, ParamID::length, ParamID::style })
+    for (auto* id : { ParamID::tune, ParamID::pitchDrop, ParamID::pitchHold, ParamID::pitchDecay,
+                      ParamID::click, ParamID::punch, ParamID::ampHold, ParamID::decay, ParamID::drive,
+                      ParamID::hpf, ParamID::tone, ParamID::lo, ParamID::hi, ParamID::level,
+                      ParamID::length, ParamID::style })
         proc.apvts.removeParameterListener (id, this);
     eachLayerEqId ([this] (const char* id) { proc.apvts.removeParameterListener (id, this); });
     eachLayerVoiceId ([this] (const char* id) { proc.apvts.removeParameterListener (id, this); });
@@ -1239,7 +1241,7 @@ void K1XAudioProcessorEditor::layoutContent()
     layerEq.setBounds (r);
     layerMix.setBounds (r);
     const int cols = 6;
-    const int rows = 2;
+    const int rows = 3;
     const int cellW = r.getWidth() / cols;
     const int cellH = r.getHeight() / rows;
     const bool showNoiseType = editorPage == 0 && ! layerEqOpen && ! mixView
@@ -1338,11 +1340,11 @@ void K1XAudioProcessorEditor::bindKnobs()
     knobSig = sig;
 
     struct Spec { const char* id; const char* name; };
-    Spec spec[12] = {};
+    Spec spec[18] = {};
     int n = 0;
     auto add = [&] (const char* id, const char* name)
     {
-        if (n < 12)
+        if (n < 18)
             spec[n++] = { id, name };
     };
 
@@ -1350,9 +1352,11 @@ void K1XAudioProcessorEditor::bindKnobs()
     {
         add (ParamID::tune, "Tune");
         add (ParamID::pitchDrop, "Drop");
+        add (ParamID::pitchHold, "P.Hold");
         add (ParamID::pitchDecay, "P.Decay");
         add (ParamID::click, "Click");
         add (ParamID::punch, "Attack / Punch");
+        add (ParamID::ampHold, "A.Hold");
         add (ParamID::decay, "Decay");
         add (ParamID::drive, "Drive");
         add (ParamID::hpf, "HPF");
