@@ -19,7 +19,7 @@ Kick one-shot (909 default). MIDI note-on retriggers and sets body pitch from th
 
 ## Layers
 
-The rail next to the waveform adds Bass, Noise, Click, or Sweep on top of the kick. Each layer has gain/mute/solo/phase on Mix, a **Delay / Pre** (0–80 ms) before the hit, and its own EQ. A strip under the wave is always 0–80 ms: onset, attack length, mute (M) and solo (S). Shared on extra voices:
+The rail next to the waveform adds Bass, Noise, Click, Sweep, or Sample on top of the kick. Each layer has gain/mute/solo/phase on Mix, a **Delay / Pre** (0–80 ms) before the hit, and its own EQ. A strip under the wave is always 0–80 ms: onset, attack length, mute (M) and solo (S). Shared on extra voices:
 
 - **Length** — how long the voice may speak (ms). Auto follows Decay, or the global Length snap when that is not Free.
 - **Attack** — fade-in after Pre (0–30 ms).
@@ -46,6 +46,11 @@ Sweep knobs:
 
 - **Start / Drop / Decay** — start Hz, octaves down, fall time (also amp).
 - **Drive / Tone** — tanh (off at 0) and low-pass.
+
+Sample knobs:
+
+- **Load** — one user file per slot (WAV/AIFF/FLAC). No factory library. Path is saved with the patch; a missing file is silence.
+- **HPF / LPF / Length / Pre** — same mix rail as the other types. No pitch shift.
 
 **Volume** (title bar, right) — live master fader and a glance spectrum. Turns orange for ~800 ms if the output hits 0 dBFS.
 

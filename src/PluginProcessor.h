@@ -67,6 +67,10 @@ public:
     bool savePatchAs (const juce::String& name);
     bool exportPatch (const juce::File& dest);
     bool importPatch (const juce::File& src);
+    bool loadSlotSample (int slot, const juce::File& file);
+    void clearSlotSample (int slot);
+    juce::String slotSamplePath (int slot) const;
+    void reloadSlotSamples();
 
     // Editor scale (drag the corner). Saved with the session, not with patches.
     float uiScale = 0.85f;
@@ -89,6 +93,14 @@ private:
     k1x::EqAnalyser layerAnalysers[k1x::kMixLayers];
     juce::AudioBuffer<float> layerScratch;
     juce::AudioBuffer<float> sendScratch;
+    // ponytail: two buffers per slot; a third load while the previous-previous still plays can tear.
+    struct SlotSample
+    {
+        juce::AudioBuffer<float> buf[2];
+        double fileSr[2] = { 44100.0, 44100.0 };
+        std::atomic<int> live { 0 };
+    };
+    SlotSample slotSamples[ParamID::slotCount];
     k1x::PostFx postFx;
     k1x::ParametricEq postEq;
     k1x::EqAnalyser analyser;

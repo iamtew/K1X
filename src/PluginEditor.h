@@ -47,6 +47,7 @@ private:
     void chooseSaveAs();
     void chooseExport();
     void chooseImport();
+    void chooseSlotSample();
     void setEditorPage (int page);
     void selectLayer (int layer);
     void selectMix();
@@ -246,6 +247,7 @@ private:
     juce::Label noiseTypeLabel;
     juce::ComboBox noiseTypeBox;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> noiseTypeAtt;
+    juce::ToggleButton sampleLoadBtn;
     PatchBar patchBar;
     PatchBar pageBar;
     VolumeStrip volumeStrip { *this };

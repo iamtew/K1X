@@ -6,6 +6,7 @@
 - Bass layer: sine at Tune×2^(semitones/12), optional Drop (octaves, same Decay as amp), tanh Drive, HP then LP, Length/Attack like Noise.
 - Click layer: sine+noise mix, then HP/LP, Length/Attack like Noise.
 - Sweep layer: falling sine (Start, Drop octaves, Decay). Optional tanh Drive. LP Tone. Length/Attack like Noise.
+- Sample layer: message thread loads the file; audio thread reads a prepared buffer with linear resample, HP/LP, Pre, and Length. No I/O on the audio thread.
 - Style also scales pitch-decay and amp-decay. Knobs stay independent.
 - Attack / Punch maps to 0.3–50 ms amp attack, then exponential decay. Waveform overlay matches that time; it does not skip samples. The preview is the summed layers (post layer EQ, mute/solo/gain, master), before post FX.
 - Drive: `tanh(x * (1 + drive * 4))`.

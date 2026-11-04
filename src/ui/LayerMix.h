@@ -52,6 +52,7 @@ private:
             case ParamID::layerNoise: return juce::Colour (0xff3dff8a);
             case ParamID::layerClick: return juce::Colour (0xffffcc33);
             case ParamID::layerSweep: return juce::Colour (0xffff4ad2);
+            case ParamID::layerSample: return juce::Colour (0xff66d4ff);
             default:                  return juce::Colour (0xffb7c5d6);
         }
     }
@@ -66,6 +67,7 @@ private:
             case ParamID::layerNoise: return "Noise";
             case ParamID::layerClick: return "Click";
             case ParamID::layerSweep: return "Sweep";
+            case ParamID::layerSample: return "Sample";
             default:                  return "";
         }
     }

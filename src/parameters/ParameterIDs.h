@@ -27,6 +27,7 @@ inline constexpr int layerBass = 1;
 inline constexpr int layerNoise = 2;
 inline constexpr int layerClick = 3;
 inline constexpr int layerSweep = 4;
+inline constexpr int layerSample = 5;
 
 inline constexpr int layerOfSlot (int slot) { return slot + 1; }
 
@@ -74,6 +75,10 @@ inline constexpr const char* lySweepDrive[slotCount] = { "ly1SweepDrive", "ly2Sw
 inline constexpr const char* lySweepLp[slotCount]    = { "ly1SweepLp", "ly2SweepLp", "ly3SweepLp" };
 inline constexpr const char* lySweepLen[slotCount]   = { "ly1SweepLen", "ly2SweepLen", "ly3SweepLen" };
 inline constexpr const char* lySweepAtk[slotCount]   = { "ly1SweepAtk", "ly2SweepAtk", "ly3SweepAtk" };
+
+inline constexpr const char* lySampleHp[slotCount]  = { "ly1SampleHp", "ly2SampleHp", "ly3SampleHp" };
+inline constexpr const char* lySampleLp[slotCount]  = { "ly1SampleLp", "ly2SampleLp", "ly3SampleLp" };
+inline constexpr const char* lySampleLen[slotCount] = { "ly1SampleLen", "ly2SampleLen", "ly3SampleLen" };
 
 inline constexpr const char* lyEqOn[layerCount] = { "ly0EqOn", "ly1EqOn", "ly2EqOn", "ly3EqOn" };
 inline constexpr const char* lyEqType[layerCount][eqBandCount] = {

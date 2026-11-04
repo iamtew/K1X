@@ -4,6 +4,7 @@
 
 static_assert (ParamID::layerOff == k1x::layerOff, "layer type ids");
 static_assert (ParamID::layerSweep == k1x::layerSweep, "layer type ids");
+static_assert (ParamID::layerSample == k1x::layerSample, "layer type ids");
 static_assert (ParamID::layerCount == k1x::kMixLayers, "layer count");
 
 #include <cstring>
@@ -12,6 +13,7 @@ static_assert (ParamID::layerCount == k1x::kMixLayers, "layer count");
 namespace
 {
 const juce::Identifier kPatchName { "PATCH_NAME" };
+const juce::Identifier kSamplePath[ParamID::slotCount] { "LY1_SAMPLE", "LY2_SAMPLE", "LY3_SAMPLE" };
 constexpr const char* kInitPatch = "Init Patch";
 constexpr const char* kPatchExt = ".k1xp";
 
@@ -295,6 +297,16 @@ void K1XAudioProcessor::fillSlots (k1x::SlotVoiceParams* out, float kickHz, floa
         d.sweep.delayMs = delay;
         d.sweep.attackMs = raw (ParamID::lySweepAtk[s]);
         d.sweep.lengthSec = layerLen (ParamID::lySweepLen[s]);
+        const int live = slotSamples[s].live.load (std::memory_order_acquire);
+        auto& buf = slotSamples[s].buf[live];
+        d.sample.data = buf.getNumSamples() > 1 ? buf.getReadPointer (0) : nullptr;
+        d.sample.n = buf.getNumSamples();
+        d.sample.fileSr = slotSamples[s].fileSr[live];
+        d.sample.hpfHz = raw (ParamID::lySampleHp[s]);
+        d.sample.lpfHz = raw (ParamID::lySampleLp[s]);
+        d.sample.delayMs = delay;
+        d.sample.lengthSec = layerLen (ParamID::lySampleLen[s]);
+        d.sample.attackMs = 0.f;
     }
 }
 
@@ -708,6 +720,63 @@ void K1XAudioProcessor::initPatch()
         param->endChangeGesture();
     }
     apvts.state.setProperty (kPatchName, kInitPatch, nullptr);
+    for (int s = 0; s < ParamID::slotCount; ++s)
+        clearSlotSample (s);
+}
+
+bool K1XAudioProcessor::loadSlotSample (int slot, const juce::File& file)
+{
+    if (slot < 0 || slot >= ParamID::slotCount)
+        return false;
+    juce::AudioFormatManager fm;
+    fm.registerBasicFormats();
+    std::unique_ptr<juce::AudioFormatReader> reader (fm.createReaderFor (file));
+    if (reader == nullptr || reader->lengthInSamples < 2)
+        return false;
+    auto& slotBuf = slotSamples[slot];
+    const int next = 1 - slotBuf.live.load (std::memory_order_relaxed);
+    const int n = (int) juce::jmin ((juce::int64) reader->lengthInSamples, (juce::int64) 44100 * 8);
+    slotBuf.buf[next].setSize (1, n, false, false, true);
+    slotBuf.buf[next].clear();
+    reader->read (&slotBuf.buf[next], 0, n, 0, true, false);
+    slotBuf.fileSr[next] = reader->sampleRate > 1.0 ? reader->sampleRate : 44100.0;
+    slotBuf.live.store (next, std::memory_order_release);
+    apvts.state.setProperty (kSamplePath[slot], file.getFullPathName(), nullptr);
+    return true;
+}
+
+void K1XAudioProcessor::clearSlotSample (int slot)
+{
+    if (slot < 0 || slot >= ParamID::slotCount)
+        return;
+    auto& slotBuf = slotSamples[slot];
+    const int next = 1 - slotBuf.live.load (std::memory_order_relaxed);
+    slotBuf.buf[next].setSize (1, 0);
+    slotBuf.fileSr[next] = 44100.0;
+    slotBuf.live.store (next, std::memory_order_release);
+    apvts.state.removeProperty (kSamplePath[slot], nullptr);
+}
+
+juce::String K1XAudioProcessor::slotSamplePath (int slot) const
+{
+    if (slot < 0 || slot >= ParamID::slotCount)
+        return {};
+    return apvts.state.getProperty (kSamplePath[slot]).toString();
+}
+
+void K1XAudioProcessor::reloadSlotSamples()
+{
+    for (int s = 0; s < ParamID::slotCount; ++s)
+    {
+        const auto path = slotSamplePath (s);
+        if (path.isEmpty() || ! loadSlotSample (s, juce::File (path)))
+        {
+            auto& slotBuf = slotSamples[s];
+            const int next = 1 - slotBuf.live.load (std::memory_order_relaxed);
+            slotBuf.buf[next].setSize (1, 0);
+            slotBuf.live.store (next, std::memory_order_release);
+        }
+    }
 }
 
 bool K1XAudioProcessor::loadPatchByName (const juce::String& name)
@@ -726,6 +795,7 @@ bool K1XAudioProcessor::loadPatchByName (const juce::String& name)
             return false;
         apvts.replaceState (juce::ValueTree::fromXml (*xml));
         apvts.state.setProperty (kPatchName, stem, nullptr);
+        reloadSlotSamples();
         return true;
     }
     const int stackIndex = k1x::factoryStackIndex (stem.toRawUTF8());
@@ -803,6 +873,7 @@ void K1XAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
             uiScale = juce::jlimit (0.4f, 1.5f, (float) xml->getDoubleAttribute ("uiScale", uiScale));  // sessions only, patches keep your size
             xml->removeAttribute ("uiScale");  // don't leak into patch saves
             apvts.replaceState (juce::ValueTree::fromXml (*xml));
+            reloadSlotSamples();
         }
 }
 

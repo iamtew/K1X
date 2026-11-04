@@ -403,6 +403,74 @@ private:
     float lpZ = 0.f;
 };
 
+struct SampleVoice
+{
+    struct Params
+    {
+        const float* data = nullptr;
+        int n = 0;
+        double fileSr = 44100.0;
+        float hpfHz = 80.f;
+        float lpfHz = 16000.f;
+        float delayMs = 0.f;
+        float lengthSec = 0.f;
+        float attackMs = 0.f;
+    };
+
+    void prepare (double sampleRate) { clock.prepare (sampleRate); }
+
+    void trigger (const Params& p)
+    {
+        params = p;
+        hpZ = lpZ = 0.f;
+        float life = 0.05f;
+        if (params.data != nullptr && params.n > 1 && params.fileSr > 1.0)
+            life = (float) ((double) params.n / params.fileSr);
+        if (life < 0.005f)
+            life = 0.005f;
+        if (params.lengthSec > 0.f)
+            life = params.lengthSec;
+        clock.arm (params.delayMs, life, params.attackMs);
+    }
+
+    void silence() { clock.silence(); }
+    bool active() const { return clock.active; }
+
+    float process()
+    {
+        if (! clock.tick())
+            return 0.f;
+        float x = 0.f;
+        if (params.data != nullptr && params.n > 1 && params.fileSr > 1.0)
+        {
+            const double idx = (double) clock.pos * (params.fileSr / clock.sr);
+            if (idx >= 0.0 && idx < (double) (params.n - 1))
+            {
+                const int i0 = (int) idx;
+                const float frac = (float) (idx - (double) i0);
+                x = params.data[i0] + frac * (params.data[i0 + 1] - params.data[i0]);
+            }
+        }
+        float hp = params.hpfHz;
+        float lp = params.lpfHz;
+        layerSortBand (hp, lp);
+        const float hpC = layerOnePole (hp, clock.sr);
+        const float lpC = layerOnePole (lp, clock.sr);
+        hpZ += hpC * (x - hpZ);
+        const float high = x - hpZ;
+        lpZ += lpC * (high - lpZ);
+        const float y = lpZ * clock.attack() * clock.fade();
+        clock.advance();
+        return y;
+    }
+
+    Params params;
+
+private:
+    LayerClock clock;
+    float hpZ = 0.f, lpZ = 0.f;
+};
+
 inline void renderBass (float* dest, int n, double sampleRate, const BassVoice::Params& p)
 {
     BassVoice v;
@@ -436,6 +504,7 @@ inline constexpr int layerBass = 1;
 inline constexpr int layerNoise = 2;
 inline constexpr int layerClick = 3;
 inline constexpr int layerSweep = 4;
+inline constexpr int layerSample = 5;
 
 struct SlotVoiceParams
 {
@@ -444,6 +513,7 @@ struct SlotVoiceParams
     NoiseVoice::Params noise;
     ClickVoice::Params click;
     SweepVoice::Params sweep;
+    SampleVoice::Params sample;
 };
 
 // gain is linear. flip true inverts. A solo anywhere mutes every layer that is not soloed.
@@ -486,6 +556,7 @@ struct LayerStack
             noise[i].prepare (sampleRate);
             click[i].prepare (sampleRate);
             sweep[i].prepare (sampleRate);
+            sample[i].prepare (sampleRate);
         }
         const double sr = sampleRate > 1.0 ? sampleRate : 44100.0;
         fadeN = (int) (sr * 0.005);
@@ -514,6 +585,7 @@ struct LayerStack
             noise[s].silence();
             click[s].silence();
             sweep[s].silence();
+            sample[s].silence();
             if (slots == nullptr)
                 continue;
             switch (slots[s].type)
@@ -522,6 +594,7 @@ struct LayerStack
                 case layerNoise: noise[s].trigger (slots[s].noise); break;
                 case layerClick: click[s].trigger (slots[s].click); break;
                 case layerSweep: sweep[s].trigger (slots[s].sweep); break;
+                case layerSample: sample[s].trigger (slots[s].sample); break;
                 default: break;
             }
         }
@@ -532,7 +605,8 @@ struct LayerStack
         layer[0] = kick.process();
         for (int s = 0; s < 3; ++s)
             layer[s + 1] = bass[s].process() + noise[s].process()
-                         + click[s].process() + sweep[s].process();
+                         + click[s].process() + sweep[s].process()
+                         + sample[s].process();
         for (int L = 0; L < kMixLayers; ++L)
         {
             if (residualI[L] > 0)
@@ -550,6 +624,7 @@ struct LayerStack
     NoiseVoice noise[3];
     ClickVoice click[3];
     SweepVoice sweep[3];
+    SampleVoice sample[3];
 
 private:
     int fadeN = 4;
@@ -561,6 +636,15 @@ private:
 inline void renderSweep (float* dest, int n, double sampleRate, const SweepVoice::Params& p)
 {
     SweepVoice v;
+    v.prepare (sampleRate);
+    v.trigger (p);
+    for (int i = 0; i < n; ++i)
+        dest[i] = v.process();
+}
+
+inline void renderSample (float* dest, int n, double sampleRate, const SampleVoice::Params& p)
+{
+    SampleVoice v;
     v.prepare (sampleRate);
     v.trigger (p);
     for (int i = 0; i < n; ++i)

@@ -45,6 +45,7 @@ juce::Colour layerColour (int type)
         case ParamID::layerNoise: return juce::Colour (0xff3dff8a);
         case ParamID::layerClick: return juce::Colour (0xffffcc33);
         case ParamID::layerSweep: return juce::Colour (0xffff4ad2);
+        case ParamID::layerSample: return juce::Colour (0xff66d4ff);
         default:                  return kOrange;
     }
 }
@@ -57,6 +58,7 @@ const char* layerLetter (int type)
         case ParamID::layerNoise: return "N";
         case ParamID::layerClick: return "C";
         case ParamID::layerSweep: return "S";
+        case ParamID::layerSample: return "A";
         default:                  return "K";
     }
 }
@@ -104,6 +106,9 @@ void eachLayerVoiceId (Fn&& fn)
         fn (ParamID::lySweepLp[s]);
         fn (ParamID::lySweepLen[s]);
         fn (ParamID::lySweepAtk[s]);
+        fn (ParamID::lySampleHp[s]);
+        fn (ParamID::lySampleLp[s]);
+        fn (ParamID::lySampleLen[s]);
     }
 }
 
@@ -943,6 +948,11 @@ K1XAudioProcessorEditor::K1XAudioProcessorEditor (K1XAudioProcessor& p)
     noiseTypeBox.addItem ("Pink", 2);
     noiseTypeBox.addItem ("Brown", 3);
 
+    sampleLoadBtn.setButtonText ("Load");
+    sampleLoadBtn.setClickingTogglesState (false);
+    sampleLoadBtn.onClick = [this] { chooseSlotSample(); };
+    content.addAndMakeVisible (sampleLoadBtn);
+
     patchBar.onStep = [this] (int d) { cyclePatch (d); };
     patchBar.onOpen = [this] { openPatchMenu(); };
     content.addAndMakeVisible (patchBar);
@@ -1247,6 +1257,11 @@ void K1XAudioProcessorEditor::layoutContent()
         noiseTypeLabel.setBounds (c.removeFromTop (kLabelH));
         noiseTypeBox.setBounds (c.reduced (6, juce::jmax (0, (c.getHeight() - 24) / 2)));
     }
+    const bool showSampleLoad = editorPage == 0 && ! layerEqOpen && ! mixView
+                                && selectedLayer > 0
+                                && slotType (selectedLayer - 1) == ParamID::layerSample;
+    if (showSampleLoad)
+        sampleLoadBtn.setBounds (cellAt (4).reduced (8, juce::jmax (0, (cellH - 28) / 2)));
     for (int i = 0; i < knobs.size(); ++i)
         knobs[i]->setBounds (cellAt (i));
 
@@ -1394,6 +1409,13 @@ void K1XAudioProcessorEditor::bindKnobs()
             add (ParamID::lySweepAtk[s], "Attack");
             add (delay, "Pre");
         }
+        else if (type == ParamID::layerSample)
+        {
+            add (ParamID::lySampleHp[s], "HPF");
+            add (ParamID::lySampleLp[s], "LPF");
+            add (ParamID::lySampleLen[s], "Length");
+            add (delay, "Pre");
+        }
     }
 
     for (int i = 0; i < knobs.size(); ++i)
@@ -1446,8 +1468,11 @@ void K1XAudioProcessorEditor::applyPageVisibility()
     rail.setVisible (main);
     for (auto* k : knobs)
         k->setVisible (showKnobs && k->used);
+    const bool showSampleLoad = showKnobs && selectedLayer > 0
+                                && slotType (selectedLayer - 1) == ParamID::layerSample;
     noiseTypeLabel.setVisible (showNoiseType);
     noiseTypeBox.setVisible (showNoiseType);
+    sampleLoadBtn.setVisible (showSampleLoad);
     layerEq.setVisible (showEq);
     layerMix.setVisible (main && mixView);
     eqBtn.setVisible (main && ! mixView);
@@ -1529,6 +1554,7 @@ void K1XAudioProcessorEditor::LayerRail::mouseDown (const juce::MouseEvent& e)
         m.addItem (ParamID::layerNoise, "Noise");
         m.addItem (ParamID::layerClick, "Click");
         m.addItem (ParamID::layerSweep, "Sweep");
+        m.addItem (ParamID::layerSample, "Sample");
         juce::Component::SafePointer<K1XAudioProcessorEditor> safe (&ed);
         m.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (this),
                          [safe, slot] (int result)
@@ -1740,6 +1766,29 @@ void K1XAudioProcessorEditor::chooseImport()
                                   return;
                               safe->proc.importPatch (file);
                               safe->refreshPatchName();
+                          });
+}
+
+void K1XAudioProcessorEditor::chooseSlotSample()
+{
+    if (selectedLayer <= 0)
+        return;
+    const int slot = selectedLayer - 1;
+    chooser = std::make_unique<juce::FileChooser> (
+        "Load sample",
+        juce::File::getSpecialLocation (juce::File::userDocumentsDirectory),
+        "*.wav;*.aif;*.aiff;*.flac");
+    juce::Component::SafePointer<K1XAudioProcessorEditor> safe (this);
+    chooser->launchAsync (juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
+                          [safe, slot] (const juce::FileChooser& c)
+                          {
+                              if (safe == nullptr)
+                                  return;
+                              auto file = c.getResult();
+                              if (file.getFullPathName().isEmpty())
+                                  return;
+                              safe->proc.loadSlotSample (slot, file);
+                              safe->waveDirty = true;
                           });
 }
 

@@ -164,6 +164,29 @@ int main()
             nrg += buf[(size_t) i] * buf[(size_t) i];
         assert (nrg > 0.01f);
 
+        {
+            float impulse[64];
+            for (int i = 0; i < 64; ++i)
+                impulse[i] = i == 0 ? 1.f : 0.f;
+            k1x::SampleVoice::Params sm;
+            sm.data = impulse;
+            sm.n = 64;
+            sm.fileSr = 44100.0;
+            sm.delayMs = 20.f;
+            sm.hpfHz = 20.f;
+            sm.lpfHz = 16000.f;
+            k1x::renderSample (buf.data(), (int) buf.size(), 44100.0, sm);
+            pre = 0.f;
+            const int smPre = (int) (0.015f * 44100.f);
+            for (int i = 0; i < smPre; ++i)
+                pre = std::max (pre, std::abs (buf[(size_t) i]));
+            assert (pre < 1.0e-6f);
+            float smPeak = 0.f;
+            for (int i = (int) (0.02f * 44100.f); i < (int) (0.025f * 44100.f); ++i)
+                smPeak = std::max (smPeak, std::abs (buf[(size_t) i]));
+            assert (smPeak > 0.01f);
+        }
+
         nz = {};
         nz.decay = 1.f;
         nz.lengthSec = 0.02f;
