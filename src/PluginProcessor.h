@@ -46,6 +46,8 @@ public:
     float hostBpm() const;
     k1x::KickVoice::Params currentParams() const;
     void renderShot (float* dest, int n, double sampleRate) const;
+    // Post-EQ, pre-fader. chan[layer] is n samples, owned by the caller.
+    void renderLayerChans (float* const* chan, int n, double sampleRate) const;
     void renderWithPost (juce::AudioBuffer<float>& dest, double sampleRate);
     k1x::EqAnalyser& eqAnalyser() { return analyser; }
     k1x::OutputMeter& outputMeter() { return meter; }

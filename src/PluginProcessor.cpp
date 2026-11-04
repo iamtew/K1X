@@ -236,32 +236,30 @@ void K1XAudioProcessor::fillAmps (float* out) const
     k1x::layerAmps (gain, mute, solo, enabled, flip, out);
 }
 
-void K1XAudioProcessor::renderShot (float* dest, int n, double sampleRate) const
+void K1XAudioProcessor::renderLayerChans (float* const* chan, int n, double sampleRate) const
 {
     auto kickP = currentParams();
     k1x::SlotVoiceParams slots[ParamID::slotCount];
     fillSlots (slots, kickP.tuneHz, kickP.lengthSec);
-    float amp[k1x::kMixLayers];
-    fillAmps (amp);
 
     k1x::LayerStack local;
     local.prepare (sampleRate);
     local.trigger (kickP, slots);
 
-    std::vector<float> chan[k1x::kMixLayers];
-    for (int L = 0; L < k1x::kMixLayers; ++L)
-        chan[L].assign ((size_t) n, 0.f);
     for (int i = 0; i < n; ++i)
     {
         float layer[k1x::kMixLayers];
         local.tickInto (layer);
         for (int L = 0; L < k1x::kMixLayers; ++L)
-            chan[L][(size_t) i] = layer[L];
+            if (chan[L] != nullptr)
+                chan[L][i] = layer[L];
     }
 
     const int block = 512;
     for (int L = 0; L < k1x::kMixLayers; ++L)
     {
+        if (chan[L] == nullptr)
+            continue;
         k1x::ParametricEq eq;
         eq.prepare (sampleRate, block, 1);
         k1x::EqBandParam bands[k1x::eqBandCount];
@@ -271,19 +269,33 @@ void K1XAudioProcessor::renderShot (float* dest, int n, double sampleRate) const
         for (int pos = 0; pos < n; )
         {
             const int nThis = juce::jmin (block, n - pos);
-            float* ptrs[1] = { chan[L].data() + pos };
+            float* ptrs[1] = { chan[L] + pos };
             juce::AudioBuffer<float> view (ptrs, 1, nThis);
             eq.process (view, on, bands);
             pos += nThis;
         }
     }
+}
 
-    const float master = kickP.level;
+void K1XAudioProcessor::renderShot (float* dest, int n, double sampleRate) const
+{
+    std::vector<float> storage[k1x::kMixLayers];
+    float* chan[k1x::kMixLayers];
+    for (int L = 0; L < k1x::kMixLayers; ++L)
+    {
+        storage[L].assign ((size_t) n, 0.f);
+        chan[L] = storage[L].data();
+    }
+    renderLayerChans (chan, n, sampleRate);
+
+    float amp[k1x::kMixLayers];
+    fillAmps (amp);
+    const float master = currentParams().level;
     for (int i = 0; i < n; ++i)
     {
         float acc = 0.f;
         for (int L = 0; L < k1x::kMixLayers; ++L)
-            acc += chan[L][(size_t) i] * amp[L];
+            acc += chan[L][i] * amp[L];
         dest[i] = acc * master;
     }
 }

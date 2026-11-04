@@ -36,6 +36,54 @@ constexpr int kMenuImport = 5;
 constexpr int kMenuFactory = 1000;
 constexpr int kMenuUser = 10000;
 
+juce::Colour layerColour (int type)
+{
+    switch (type)
+    {
+        case ParamID::layerBass:  return juce::Colour (0xff3b9eff);
+        case ParamID::layerNoise: return juce::Colour (0xff3dff8a);
+        case ParamID::layerClick: return juce::Colour (0xffffcc33);
+        case ParamID::layerSweep: return juce::Colour (0xffff4ad2);
+        default:                  return kOrange;
+    }
+}
+
+const char* layerLetter (int type)
+{
+    switch (type)
+    {
+        case ParamID::layerBass:  return "B";
+        case ParamID::layerNoise: return "N";
+        case ParamID::layerClick: return "C";
+        case ParamID::layerSweep: return "S";
+        default:                  return "K";
+    }
+}
+
+template <typename Fn>
+void eachLayerVoiceId (Fn&& fn)
+{
+    for (int layer = 0; layer < ParamID::layerCount; ++layer)
+        fn (ParamID::lyDelay[layer]);
+    for (int s = 0; s < ParamID::slotCount; ++s)
+    {
+        fn (ParamID::lyType[s]);
+        fn (ParamID::lyBassTune[s]);
+        fn (ParamID::lyBassDecay[s]);
+        fn (ParamID::lyBassDrive[s]);
+        fn (ParamID::lyBassHp[s]);
+        fn (ParamID::lyNoiseDecay[s]);
+        fn (ParamID::lyNoiseHp[s]);
+        fn (ParamID::lyNoiseLp[s]);
+        fn (ParamID::lyClickPitch[s]);
+        fn (ParamID::lyClickDecay[s]);
+        fn (ParamID::lyClickTone[s]);
+        fn (ParamID::lySweepStart[s]);
+        fn (ParamID::lySweepDrop[s]);
+        fn (ParamID::lySweepDecay[s]);
+    }
+}
+
 template <typename Fn>
 void eachLayerEqId (Fn&& fn)
 {
@@ -68,6 +116,19 @@ K1XAudioProcessorEditor::Knob::Knob (juce::AudioProcessorValueTreeState& st,
     slider.setColour (juce::Slider::textBoxBackgroundColourId, juce::Colours::transparentBlack);
     slider.setColour (juce::Slider::textBoxOutlineColourId, juce::Colours::transparentBlack);
     addAndMakeVisible (slider);
+    att = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (st, id, slider);
+}
+
+void K1XAudioProcessorEditor::Knob::bind (juce::AudioProcessorValueTreeState& st, const char* id,
+                                          const juce::String& name)
+{
+    att.reset();
+    used = id != nullptr && id[0] != '\0';
+    label.setText (name, juce::dontSendNotification);
+    if (! used)
+        return;
+    if (auto* ranged = dynamic_cast<juce::RangedAudioParameter*> (st.getParameter (id)))
+        slider.setDoubleClickReturnValue (true, ranged->convertFrom0to1 (ranged->getDefaultValue()));
     att = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (st, id, slider);
 }
 
@@ -452,39 +513,33 @@ void K1XAudioProcessorEditor::WaveView::paint (juce::Graphics& g)
         g.drawText (tickLabel (durationSec), ruler, juce::Justification::centredRight, false);
     }
 
-    if (samples.size() < 2)
-        return;
-
     const float mid = inner.getCentreY();
     const float amp = inner.getHeight() * 0.42f;
-    juce::Path p;
-    const int n = (int) samples.size();
-    for (int i = 0; i < n; ++i)
+    for (const auto& tr : traces)
     {
-        const float x = inner.getX() + (float) i / (float) (n - 1) * inner.getWidth();
-        const float y = mid - samples[(size_t) i] * amp;
-        if (i == 0)
-            p.startNewSubPath (x, y);
-        else
-            p.lineTo (x, y);
-    }
-    g.setColour (kOrange);
-    g.strokePath (p, juce::PathStrokeType (1.2f));
+        if (tr.samples.size() < 2)
+            continue;
+        juce::Path p;
+        const int n = (int) tr.samples.size();
+        for (int i = 0; i < n; ++i)
+        {
+            const float x = inner.getX() + (float) i / (float) (n - 1) * inner.getWidth();
+            const float y = mid - tr.samples[(size_t) i] * amp;
+            if (i == 0)
+                p.startNewSubPath (x, y);
+            else
+                p.lineTo (x, y);
+        }
+        g.setColour (tr.colour.withAlpha (tr.alpha));
+        g.strokePath (p, juce::PathStrokeType (tr.alpha > 0.8f ? 1.6f : 1.15f));
 
-    if (attackSec > 0.0002f && durationSec > 0.f)
-    {
-        const float ax = inner.getX()
-            + juce::jlimit (0.f, 1.f, attackSec / durationSec) * inner.getWidth();
-        juce::Path wedge;
-        wedge.startNewSubPath (inner.getX(), mid);
-        wedge.lineTo (ax, mid - amp);
-        wedge.lineTo (ax, mid + amp);
-        wedge.closeSubPath();
-        g.setColour (kOrange.withAlpha (0.12f));
-        g.fillPath (wedge);
-        g.setColour (kMetal.withAlpha (0.5f));
-        g.strokePath (wedge, juce::PathStrokeType (1.f));
-        g.drawLine (ax, inner.getY(), ax, inner.getBottom(), 1.f);
+        if (tr.attackSec > 0.0002f && durationSec > 0.f)
+        {
+            const float ax = inner.getX()
+                + juce::jlimit (0.f, 1.f, tr.attackSec / durationSec) * inner.getWidth();
+            g.setColour (tr.colour.withAlpha (0.18f));
+            g.drawLine (ax, inner.getY(), ax, inner.getBottom(), 1.f);
+        }
     }
 }
 
@@ -781,16 +836,10 @@ K1XAudioProcessorEditor::K1XAudioProcessorEditor (K1XAudioProcessor& p)
 
     content.addAndMakeVisible (wave);
 
-    struct Spec { const char* id; const char* name; };
-    static constexpr Spec kKnobs[] = {
-        { ParamID::tune, "Tune" }, { ParamID::pitchDrop, "Drop" }, { ParamID::pitchDecay, "P.Decay" },
-        { ParamID::click, "Click" }, { ParamID::punch, "Attack / Punch" }, { ParamID::decay, "Decay" },
-        { ParamID::drive, "Drive" }, { ParamID::hpf, "HPF" }, { ParamID::tone, "Tone" },
-        { ParamID::lo, "Lo" }, { ParamID::hi, "Hi" }
-    };
-    for (auto& s : kKnobs)
+    content.addAndMakeVisible (rail);
+    for (int i = 0; i < 12; ++i)
     {
-        auto* k = knobs.add (new Knob (proc.apvts, s.id, s.name));
+        auto* k = knobs.add (new Knob (proc.apvts, ParamID::tune, "Tune"));
         content.addAndMakeVisible (k);
     }
 
@@ -862,6 +911,7 @@ K1XAudioProcessorEditor::K1XAudioProcessorEditor (K1XAudioProcessor& p)
                       ParamID::lo, ParamID::hi, ParamID::level, ParamID::length, ParamID::style })
         proc.apvts.addParameterListener (id, this);
     eachLayerEqId ([this] (const char* id) { proc.apvts.addParameterListener (id, this); });
+    eachLayerVoiceId ([this] (const char* id) { proc.apvts.addParameterListener (id, this); });
 
     baseW = kEditorW;
     baseH = kEditorH;
@@ -886,6 +936,7 @@ K1XAudioProcessorEditor::~K1XAudioProcessorEditor()
                       ParamID::lo, ParamID::hi, ParamID::level, ParamID::length, ParamID::style })
         proc.apvts.removeParameterListener (id, this);
     eachLayerEqId ([this] (const char* id) { proc.apvts.removeParameterListener (id, this); });
+    eachLayerVoiceId ([this] (const char* id) { proc.apvts.removeParameterListener (id, this); });
     setLookAndFeel (nullptr);
 }
 
@@ -898,6 +949,10 @@ void K1XAudioProcessorEditor::timerCallback()
 {
     if (waveDirty)
         rebuildWave();
+    if (! anyExtraLayer() && mixView)
+        selectLayer (0);
+    bindKnobs();
+    rail.repaint();
     refreshPatchName();
     volumeStrip.refresh();
     if (fxPage.isVisible())
@@ -907,23 +962,55 @@ void K1XAudioProcessorEditor::timerCallback()
 void K1XAudioProcessorEditor::rebuildWave()
 {
     waveDirty = false;
-    const int n = 1024;
-    std::vector<float> full (44100);
-    proc.renderShot (full.data(), (int) full.size(), 44100.0);
+    constexpr int fullN = 44100;
+    constexpr int bins = 1024;
+    std::vector<float> storage[k1x::kMixLayers];
+    float* chan[k1x::kMixLayers];
+    for (int L = 0; L < k1x::kMixLayers; ++L)
+    {
+        storage[L].assign ((size_t) fullN, 0.f);
+        chan[L] = storage[L].data();
+    }
+    proc.renderLayerChans (chan, fullN, 44100.0);
 
-    int last = (int) full.size() - 1;
-    while (last > 64 && std::abs (full[(size_t) last]) < 0.002f)
-        --last;
-    last = juce::jmax (64, last);
+    bool show[k1x::kMixLayers] = { true, false, false, false };
+    for (int s = 0; s < ParamID::slotCount; ++s)
+        show[ParamID::layerOfSlot (s)] = slotType (s) != ParamID::layerOff;
+
+    int last = 64;
+    for (int L = 0; L < k1x::kMixLayers; ++L)
+    {
+        if (! show[L])
+            continue;
+        int end = fullN - 1;
+        while (end > 64 && std::abs (storage[L][(size_t) end]) < 0.002f)
+            --end;
+        last = juce::jmax (last, end);
+    }
 
     wave.durationSec = (float) last / 44100.f;
-    wave.attackSec = k1x::punchToAttackMs (proc.currentParams().punch) * 0.001f;
-    wave.samples.resize ((size_t) n);
-    for (int i = 0; i < n; ++i)
+    wave.traces.clear();
+    auto push = [&] (int L, float alpha, float attack)
     {
-        const int src = (int) ((double) i / (double) (n - 1) * (double) last);
-        wave.samples[(size_t) i] = juce::jlimit (-1.f, 1.f, full[(size_t) src]);
-    }
+        K1XAudioProcessorEditor::WaveView::Trace tr;
+        tr.colour = L == 0 ? kOrange : layerColour (slotType (L - 1));
+        tr.alpha = alpha;
+        tr.attackSec = attack;
+        tr.samples.resize ((size_t) bins);
+        for (int i = 0; i < bins; ++i)
+        {
+            const int src = (int) ((double) i / (double) (bins - 1) * (double) last);
+            tr.samples[(size_t) i] = juce::jlimit (-1.f, 1.f, storage[L][(size_t) src]);
+        }
+        wave.traces.push_back (std::move (tr));
+    };
+
+    const int hot = mixView ? -1 : selectedLayer;
+    for (int L = 0; L < k1x::kMixLayers; ++L)
+        if (show[L] && L != hot)
+            push (L, 0.4f, 0.f);
+    if (hot >= 0 && show[hot])
+        push (hot, 1.f, hot == 0 ? k1x::punchToAttackMs (proc.currentParams().punch) * 0.001f : 0.f);
     wave.repaint();
 }
 
@@ -988,7 +1075,9 @@ void K1XAudioProcessorEditor::layoutContent()
     }
 
     fxPage.setBounds (r);
-    wave.setBounds (r.removeFromTop (110).reduced (0, 4));
+    auto waveRow = r.removeFromTop (110).reduced (0, 4);
+    rail.setBounds (waveRow.removeFromLeft (36));
+    wave.setBounds (waveRow);
     r.removeFromTop (6);
     layerEq.setBounds (r);
     const int cols = 6;
@@ -1037,22 +1126,249 @@ void K1XAudioProcessorEditor::openPageMenu()
                      });
 }
 
+int K1XAudioProcessorEditor::slotType (int slot) const
+{
+    if (auto* v = proc.apvts.getRawParameterValue (ParamID::lyType[slot]))
+        return juce::roundToInt (v->load());
+    return ParamID::layerOff;
+}
+
+bool K1XAudioProcessorEditor::anyExtraLayer() const
+{
+    for (int s = 0; s < ParamID::slotCount; ++s)
+        if (slotType (s) != ParamID::layerOff)
+            return true;
+    return false;
+}
+
+void K1XAudioProcessorEditor::setSlotType (int slot, int type)
+{
+    auto* p = proc.apvts.getParameter (ParamID::lyType[slot]);
+    if (p == nullptr)
+        return;
+    p->beginChangeGesture();
+    p->setValueNotifyingHost (p->convertTo0to1 ((float) type));
+    p->endChangeGesture();
+    waveDirty = true;
+}
+
+void K1XAudioProcessorEditor::bindKnobs()
+{
+    juce::String sig = mixView ? "mix" : ("L" + juce::String (selectedLayer));
+    if (selectedLayer > 0)
+        sig += ":" + juce::String (slotType (selectedLayer - 1));
+    if (sig == knobSig)
+        return;
+    knobSig = sig;
+
+    struct Spec { const char* id; const char* name; };
+    Spec spec[12] = {};
+    int n = 0;
+    auto add = [&] (const char* id, const char* name)
+    {
+        if (n < 12)
+            spec[n++] = { id, name };
+    };
+
+    if (! mixView && selectedLayer == 0)
+    {
+        add (ParamID::tune, "Tune");
+        add (ParamID::pitchDrop, "Drop");
+        add (ParamID::pitchDecay, "P.Decay");
+        add (ParamID::click, "Click");
+        add (ParamID::punch, "Attack / Punch");
+        add (ParamID::decay, "Decay");
+        add (ParamID::drive, "Drive");
+        add (ParamID::hpf, "HPF");
+        add (ParamID::tone, "Tone");
+        add (ParamID::lo, "Lo");
+        add (ParamID::hi, "Hi");
+        add (ParamID::lyDelay[0], "Delay");
+    }
+    else if (! mixView && selectedLayer > 0)
+    {
+        const int s = selectedLayer - 1;
+        const int type = slotType (s);
+        const char* delay = ParamID::lyDelay[selectedLayer];
+        if (type == ParamID::layerBass)
+        {
+            add (ParamID::lyBassTune[s], "Tune");
+            add (ParamID::lyBassDecay[s], "Decay");
+            add (ParamID::lyBassDrive[s], "Drive");
+            add (ParamID::lyBassHp[s], "HPF");
+            add (delay, "Delay");
+        }
+        else if (type == ParamID::layerNoise)
+        {
+            add (ParamID::lyNoiseDecay[s], "Decay");
+            add (ParamID::lyNoiseHp[s], "HPF");
+            add (ParamID::lyNoiseLp[s], "LPF");
+            add (delay, "Delay");
+        }
+        else if (type == ParamID::layerClick)
+        {
+            add (ParamID::lyClickPitch[s], "Pitch");
+            add (ParamID::lyClickDecay[s], "Decay");
+            add (ParamID::lyClickTone[s], "Tone");
+            add (delay, "Delay");
+        }
+        else if (type == ParamID::layerSweep)
+        {
+            add (ParamID::lySweepStart[s], "Start");
+            add (ParamID::lySweepDrop[s], "Drop");
+            add (ParamID::lySweepDecay[s], "Decay");
+            add (delay, "Delay");
+        }
+    }
+
+    for (int i = 0; i < knobs.size(); ++i)
+    {
+        if (i < n)
+            knobs[i]->bind (proc.apvts, spec[i].id, spec[i].name);
+        else
+            knobs[i]->bind (proc.apvts, nullptr, {});
+    }
+    applyPageVisibility();
+}
+
 void K1XAudioProcessorEditor::selectLayer (int layer)
 {
+    mixView = false;
     selectedLayer = juce::jlimit (0, ParamID::layerCount - 1, layer);
     layerEq.bindTo (k1x::layerEqIds (selectedLayer), proc.layerAnalyser (selectedLayer));
+    knobSig.clear();
+    bindKnobs();
+    waveDirty = true;
+    rail.repaint();
+    applyPageVisibility();
+}
+
+void K1XAudioProcessorEditor::selectMix()
+{
+    if (! anyExtraLayer())
+        return;
+    mixView = true;
+    knobSig.clear();
+    bindKnobs();
+    rail.repaint();
+    applyPageVisibility();
 }
 
 void K1XAudioProcessorEditor::applyPageVisibility()
 {
     const bool main = editorPage == 0;
-    const bool showEq = main && layerEqOpen;
+    const bool showEq = main && layerEqOpen && ! mixView;
+    const bool showKnobs = main && ! layerEqOpen && ! mixView;
     wave.setVisible (main);
+    rail.setVisible (main);
     for (auto* k : knobs)
-        k->setVisible (main && ! layerEqOpen);
+        k->setVisible (showKnobs && k->used);
     layerEq.setVisible (showEq);
-    eqBtn.setVisible (main);
+    eqBtn.setVisible (main && ! mixView);
     fxPage.setVisible (! main);
+}
+
+void K1XAudioProcessorEditor::LayerRail::layoutItems (juce::Array<Item>& items) const
+{
+    items.clear();
+    const int h = 18;
+    int y = 0;
+    auto push = [&] (Item it)
+    {
+        it.bounds = { 0, y, getWidth(), h };
+        y += h + 2;
+        items.add (it);
+    };
+    push ({ 0, ParamID::layerOff, false, false, {} });
+    int used = 0;
+    for (int s = 0; s < ParamID::slotCount; ++s)
+    {
+        const int type = ed.slotType (s);
+        if (type == ParamID::layerOff)
+            continue;
+        push ({ ParamID::layerOfSlot (s), type, false, false, {} });
+        ++used;
+    }
+    if (used < ParamID::slotCount)
+        push ({ -1, 0, false, true, {} });
+    if (used > 0)
+        push ({ -1, 0, true, false, {} });
+}
+
+void K1XAudioProcessorEditor::LayerRail::paint (juce::Graphics& g)
+{
+    juce::Array<Item> items;
+    layoutItems (items);
+    for (const auto& it : items)
+    {
+        const bool on = it.mix ? ed.mixView
+                               : (it.add ? false : (! ed.mixView && ed.selectedLayer == it.layer));
+        const juce::Colour col = it.mix ? kMetal : (it.add ? kMetal : (it.layer == 0 ? kOrange : layerColour (it.type)));
+        auto r = it.bounds.toFloat().reduced (1.f, 0.f);
+        g.setColour (on ? col.withAlpha (0.9f) : col.withAlpha (0.18f));
+        g.fillRoundedRectangle (r, 3.f);
+        g.setColour (col.withAlpha (on ? 1.f : 0.7f));
+        g.drawRoundedRectangle (r, 3.f, 1.f);
+        g.setColour (on ? kDark : col);
+        g.setFont (boldFont (11.f));
+        const char* text = it.add ? "+" : (it.mix ? "Mx" : layerLetter (it.layer == 0 ? 0 : it.type));
+        g.drawText (text, it.bounds, juce::Justification::centred, false);
+    }
+}
+
+void K1XAudioProcessorEditor::LayerRail::mouseDown (const juce::MouseEvent& e)
+{
+    juce::Array<Item> items;
+    layoutItems (items);
+    const Item* hit = nullptr;
+    for (const auto& it : items)
+        if (it.bounds.contains (e.getPosition()))
+            hit = &it;
+    if (hit == nullptr)
+        return;
+
+    if (hit->add)
+    {
+        int slot = -1;
+        for (int s = 0; s < ParamID::slotCount; ++s)
+            if (ed.slotType (s) == ParamID::layerOff)
+            {
+                slot = s;
+                break;
+            }
+        if (slot < 0)
+            return;
+        juce::PopupMenu m;
+        m.addItem (ParamID::layerBass, "Bass");
+        m.addItem (ParamID::layerNoise, "Noise");
+        m.addItem (ParamID::layerClick, "Click");
+        m.addItem (ParamID::layerSweep, "Sweep");
+        juce::Component::SafePointer<K1XAudioProcessorEditor> safe (&ed);
+        m.showMenuAsync (juce::PopupMenu::Options().withTargetComponent (this),
+                         [safe, slot] (int result)
+                         {
+                             if (safe == nullptr || result <= 0)
+                                 return;
+                             safe->setSlotType (slot, result);
+                             safe->selectLayer (ParamID::layerOfSlot (slot));
+                         });
+        return;
+    }
+
+    if (e.mods.isPopupMenu() && hit->layer > 0)
+    {
+        ed.setSlotType (hit->layer - 1, ParamID::layerOff);
+        if (ed.selectedLayer == hit->layer || ed.mixView)
+            ed.selectLayer (0);
+        else
+            ed.rail.repaint();
+        return;
+    }
+
+    if (hit->mix)
+        ed.selectMix();
+    else if (hit->layer >= 0)
+        ed.selectLayer (hit->layer);
 }
 
 void K1XAudioProcessorEditor::contentMouseUp (const juce::MouseEvent& e)

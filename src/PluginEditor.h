@@ -47,6 +47,11 @@ private:
     void chooseImport();
     void setEditorPage (int page);
     void selectLayer (int layer);
+    void selectMix();
+    void bindKnobs();
+    void setSlotType (int slot, int type);
+    int slotType (int slot) const;
+    bool anyExtraLayer() const;
     void openPageMenu();
     void cyclePage (int delta);
     void applyPageVisibility();
@@ -86,9 +91,33 @@ private:
     struct WaveView : public juce::Component
     {
         void paint (juce::Graphics& g) override;
-        std::vector<float> samples;
+        struct Trace
+        {
+            std::vector<float> samples;
+            juce::Colour colour;
+            float alpha = 0.45f;
+            float attackSec = 0.f;
+        };
+        std::vector<Trace> traces;
         float durationSec = 0.f;
-        float attackSec = 0.f;
+    };
+
+    struct LayerRail : public juce::Component
+    {
+        explicit LayerRail (K1XAudioProcessorEditor& e) : ed (e) {}
+        void paint (juce::Graphics& g) override;
+        void mouseDown (const juce::MouseEvent& e) override;
+
+        struct Item
+        {
+            int layer = -1;
+            int type = 0;
+            bool mix = false;
+            bool add = false;
+            juce::Rectangle<int> bounds;
+        };
+        void layoutItems (juce::Array<Item>& items) const;
+        K1XAudioProcessorEditor& ed;
     };
 
     struct PatchBar : public juce::Component
@@ -156,7 +185,9 @@ private:
     {
         Knob (juce::AudioProcessorValueTreeState& st, const juce::String& id, const juce::String& name);
         void resized() override;
+        void bind (juce::AudioProcessorValueTreeState& st, const char* id, const juce::String& name);
 
+        bool used = true;
         juce::Label label;
         juce::Slider slider;
         std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> att;
@@ -192,6 +223,7 @@ private:
     Content content { *this };  // declared before its children so it is destroyed after them
     int baseW = 0, baseH = 0;   // unscaled size
     WaveView wave;
+    LayerRail rail { *this };
     juce::OwnedArray<Knob> knobs;
     juce::Label styleLabel;
     juce::ComboBox styleBox;
@@ -211,6 +243,8 @@ private:
     int editorPage = 0;
     int selectedLayer = 0;
     bool layerEqOpen = false;
+    bool mixView = false;
+    juce::String knobSig;
     std::unique_ptr<juce::FileChooser> chooser;
     juce::Image logo;
     bool waveDirty = true;
