@@ -233,6 +233,9 @@ private:
     juce::Label lengthLabel;
     juce::ComboBox lengthBox;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> lengthAtt;
+    juce::Label noiseTypeLabel;
+    juce::ComboBox noiseTypeBox;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> noiseTypeAtt;
     PatchBar patchBar;
     PatchBar pageBar;
     VolumeStrip volumeStrip { *this };

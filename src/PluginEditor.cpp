@@ -76,6 +76,9 @@ void eachLayerVoiceId (Fn&& fn)
         fn (ParamID::lyNoiseDecay[s]);
         fn (ParamID::lyNoiseHp[s]);
         fn (ParamID::lyNoiseLp[s]);
+        fn (ParamID::lyNoiseType[s]);
+        fn (ParamID::lyNoiseLen[s]);
+        fn (ParamID::lyNoiseAtk[s]);
         fn (ParamID::lyClickPitch[s]);
         fn (ParamID::lyClickDecay[s]);
         fn (ParamID::lyClickTone[s]);
@@ -871,6 +874,11 @@ K1XAudioProcessorEditor::K1XAudioProcessorEditor (K1XAudioProcessor& p)
     lengthAtt = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment> (
         proc.apvts, ParamID::length, lengthBox);
 
+    setupCombo (noiseTypeLabel, noiseTypeBox, "Type");
+    noiseTypeBox.addItem ("White", 1);
+    noiseTypeBox.addItem ("Pink", 2);
+    noiseTypeBox.addItem ("Brown", 3);
+
     patchBar.onStep = [this] (int d) { cyclePatch (d); };
     patchBar.onOpen = [this] { openPatchMenu(); };
     content.addAndMakeVisible (patchBar);
@@ -1125,10 +1133,24 @@ void K1XAudioProcessorEditor::layoutContent()
     const int rows = 2;
     const int cellW = r.getWidth() / cols;
     const int cellH = r.getHeight() / rows;
+    const bool showNoiseType = editorPage == 0 && ! layerEqOpen && ! mixView
+                               && selectedLayer > 0
+                               && slotType (selectedLayer - 1) == ParamID::layerNoise;
+    auto cellAt = [&] (int i)
+    {
+        return juce::Rectangle<int> (r.getX() + (i % cols) * cellW,
+                                     r.getY() + (i / cols) * cellH,
+                                     cellW, cellH);
+    };
+    const int knobOff = showNoiseType ? 1 : 0;
+    if (showNoiseType)
+    {
+        auto c = cellAt (0);
+        noiseTypeLabel.setBounds (c.removeFromTop (kLabelH));
+        noiseTypeBox.setBounds (c.reduced (6, juce::jmax (0, (c.getHeight() - 24) / 2)));
+    }
     for (int i = 0; i < knobs.size(); ++i)
-        knobs[i]->setBounds (r.getX() + (i % cols) * cellW,
-                             r.getY() + (i / cols) * cellH,
-                             cellW, cellH);
+        knobs[i]->setBounds (cellAt (i + knobOff));
 
     aboutBox.setBounds (content.getLocalBounds());
     applyPageVisibility();
@@ -1242,9 +1264,11 @@ void K1XAudioProcessorEditor::bindKnobs()
         else if (type == ParamID::layerNoise)
         {
             add (ParamID::lyNoiseDecay[s], "Decay");
+            add (ParamID::lyNoiseLen[s], "Length");
             add (ParamID::lyNoiseHp[s], "HPF");
             add (ParamID::lyNoiseLp[s], "LPF");
-            add (delay, "Delay");
+            add (delay, "Pre");
+            add (ParamID::lyNoiseAtk[s], "Attack");
         }
         else if (type == ParamID::layerClick)
         {
@@ -1269,7 +1293,13 @@ void K1XAudioProcessorEditor::bindKnobs()
         else
             knobs[i]->bind (proc.apvts, nullptr, {});
     }
-    applyPageVisibility();
+
+    noiseTypeAtt.reset();
+    if (! mixView && selectedLayer > 0 && slotType (selectedLayer - 1) == ParamID::layerNoise)
+        noiseTypeAtt = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment> (
+            proc.apvts, ParamID::lyNoiseType[selectedLayer - 1], noiseTypeBox);
+
+    layoutContent();
 }
 
 void K1XAudioProcessorEditor::selectLayer (int layer)
@@ -1300,10 +1330,14 @@ void K1XAudioProcessorEditor::applyPageVisibility()
     const bool main = editorPage == 0;
     const bool showEq = main && layerEqOpen && ! mixView;
     const bool showKnobs = main && ! layerEqOpen && ! mixView;
+    const bool showNoiseType = showKnobs && selectedLayer > 0
+                               && slotType (selectedLayer - 1) == ParamID::layerNoise;
     wave.setVisible (main);
     rail.setVisible (main);
     for (auto* k : knobs)
         k->setVisible (showKnobs && k->used);
+    noiseTypeLabel.setVisible (showNoiseType);
+    noiseTypeBox.setVisible (showNoiseType);
     layerEq.setVisible (showEq);
     layerMix.setVisible (main && mixView);
     eqBtn.setVisible (main && ! mixView);
