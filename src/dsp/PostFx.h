@@ -36,7 +36,8 @@ struct PostFx
     }
 
     void process (juce::AudioBuffer<float>& buffer, float bpm,
-                  juce::AudioProcessorValueTreeState& apvts)
+                  juce::AudioProcessorValueTreeState& apvts,
+                  const juce::AudioBuffer<float>* sendIn = nullptr)
     {
         if (! prepared || buffer.getNumSamples() <= 0)
             return;
@@ -44,8 +45,10 @@ struct PostFx
         ensureSize (buffer);
         const int n = buffer.getNumSamples();
         const int chs = buffer.getNumChannels();
+        const juce::AudioBuffer<float>& src = sendIn != nullptr ? *sendIn : buffer;
+        const int srcChs = src.getNumChannels();
         for (int ch = 0; ch < chs; ++ch)
-            wet.copyFrom (ch, 0, buffer, ch, 0, n);
+            wet.copyFrom (ch, 0, src, srcChs > 0 ? juce::jmin (ch, srcChs - 1) : 0, 0, n);
 
         if (on (apvts, ParamID::fxDstOn))
             processDist (n, chs, apvts);

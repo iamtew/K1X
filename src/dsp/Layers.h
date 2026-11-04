@@ -448,6 +448,19 @@ struct SlotVoiceParams
 
 // gain is linear. flip true inverts. A solo anywhere mutes every layer that is not soloed.
 // Disabled or muted layers contribute 0. The voice still has to be ticked by the caller.
+inline void layerSendMix (const float* layer, const float* amp, const float* sendAmt,
+                          float& dry, float& send, int n = kMixLayers)
+{
+    dry = 0.f;
+    send = 0.f;
+    for (int i = 0; i < n; ++i)
+    {
+        const float y = layer[i] * amp[i];
+        dry += y;
+        send += y * sendAmt[i];
+    }
+}
+
 inline void layerAmps (const float* gain, const bool* mute, const bool* solo,
                        const bool* enabled, const bool* flip, float* out, int n = kMixLayers)
 {

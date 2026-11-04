@@ -217,6 +217,7 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout
         addOn (ParamID::lyMute[i], (who + " Mute").toRawUTF8());
         addOn (ParamID::lySolo[i], (who + " Solo").toRawUTF8());
         addOn (ParamID::lyFlip[i], (who + " Phase").toRawUTF8());
+        addUnit (ParamID::lySend[i], (who + " Send").toRawUTF8(), 1.f);
         layout.add (std::make_unique<AudioParameterFloat> (
             ParameterID { ParamID::lyDelay[i], 1 }, who + " Delay", delayR, 0.f, msAttrs (delayR)));
     }

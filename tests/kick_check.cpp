@@ -330,6 +330,17 @@ int main()
         assert (amp[2] == 0.f);
         assert (amp[3] == 0.f);
 
+        float layer[4] = { 1.f, 1.f, 1.f, 1.f };
+        float sendAmt[4] = { 1.f, 0.f, 1.f, 1.f };
+        float unit[4] = { 1.f, 1.f, 1.f, 1.f };
+        float dry = 0.f, send = 0.f;
+        k1x::layerSendMix (layer, unit, sendAmt, dry, send);
+        assert (std::abs (dry - 4.f) < 1.0e-6f);
+        assert (std::abs (send - 3.f) < 1.0e-6f);
+        float allSend[4] = { 1.f, 1.f, 1.f, 1.f };
+        k1x::layerSendMix (layer, unit, allSend, dry, send);
+        assert (std::abs (dry - send) < 1.0e-6f);
+
         const float sub = 100.f * std::pow (2.f, -12.f / 12.f);
         assert (std::abs (sub - 50.f) < 1.0e-3f);
 

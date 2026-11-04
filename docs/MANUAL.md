@@ -53,7 +53,7 @@ Sweep knobs:
 
 ## Post FX (Effects page)
 
-Parallel send after the kick. **Dry** is the unprocessed kick; **FX** is Distortion → Delay → Reverb. Turn Dist / Delay / Rev on per block.
+Parallel send after the layered mix. **Dry** is the unprocessed mix; **FX** is Distortion → Delay → Reverb. Mix **Send** (per layer, default full) is how much of that layer goes into the send. Old patches stay the same. Turn Dist / Delay / Rev on per block.
 
 - **Dist** — Type (Soft tanh, Hard clip, Fold, Diode), Drive, Tone (post LP), Shape (asymmetry). Separate from the kick Drive knob.
 - **Delay** — Time, feedback, low-pass Cut. **Sync** uses host BPM and **Div** (1/16 … 1/2).

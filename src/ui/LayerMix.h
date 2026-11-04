@@ -102,6 +102,15 @@ private:
             setup (solo, "S", ParamID::lySolo[layer], soloAtt);
             setup (phase, "P", ParamID::lyFlip[layer], phaseAtt);
 
+            send.setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
+            send.setTextBoxStyle (juce::Slider::NoTextBox, true, 0, 0);
+            send.setPopupDisplayEnabled (true, false, this, 400);
+            if (auto* ranged = dynamic_cast<juce::RangedAudioParameter*> (proc.apvts.getParameter (ParamID::lySend[layer])))
+                send.setDoubleClickReturnValue (true, ranged->convertFrom0to1 (ranged->getDefaultValue()));
+            addAndMakeVisible (send);
+            sendAtt = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (
+                proc.apvts, ParamID::lySend[layer], send);
+
             name.setText (nameFor (layer, type), juce::dontSendNotification);
             name.setJustificationType (juce::Justification::centred);
             name.setColour (juce::Label::textColourId, juce::Colours::white);
@@ -129,6 +138,7 @@ private:
             mute.setBounds (row.removeFromLeft (w).reduced (1, 1));
             solo.setBounds (row.removeFromLeft (w).reduced (1, 1));
             phase.setBounds (row.reduced (1, 1));
+            send.setBounds (r.removeFromBottom (36).reduced (6, 0));
             fader.setBounds (r.reduced (8, 2));
         }
 
@@ -166,10 +176,10 @@ private:
         float shown = 0.f;
         juce::Colour accent;
         std::unique_ptr<juce::LookAndFeel_V4> lnf;
-        juce::Slider fader;
+        juce::Slider fader, send;
         juce::ToggleButton mute, solo, phase;
         juce::Label name;
-        std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> gainAtt;
+        std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> gainAtt, sendAtt;
         std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> muteAtt, soloAtt, phaseAtt;
     };
 

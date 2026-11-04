@@ -195,6 +195,7 @@ void K1XAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     analyser.prepare (sampleRate);
     meter.prepare (sampleRate);
     const int ch = juce::jmax (2, getTotalNumOutputChannels());
+    sendScratch.setSize (ch, cap, false, false, true);
     postFx.prepare (sampleRate, samplesPerBlock, ch);
     postEq.prepare (sampleRate, samplesPerBlock, ch);
 }
@@ -314,6 +315,12 @@ void K1XAudioProcessor::fillAmps (float* out) const
     k1x::layerAmps (gain, mute, solo, enabled, flip, out);
 }
 
+void K1XAudioProcessor::fillSends (float* out) const
+{
+    for (int i = 0; i < k1x::kMixLayers; ++i)
+        out[i] = raw (ParamID::lySend[i]);
+}
+
 void K1XAudioProcessor::renderLayerChans (float* const* chan, int n, double sampleRate) const
 {
     auto kickP = currentParams();
@@ -383,6 +390,8 @@ void K1XAudioProcessor::renderBars (juce::AudioBuffer<float>& dest, double sampl
     fillSlots (slotParams, kickP.tuneHz, kickP.lengthSec);
     float amp[k1x::kMixLayers];
     fillAmps (amp);
+    float sendAmt[k1x::kMixLayers];
+    fillSends (sendAmt);
 
     k1x::LayerStack local;
     local.prepare (sampleRate);
@@ -426,15 +435,24 @@ void K1XAudioProcessor::renderBars (juce::AudioBuffer<float>& dest, double sampl
 
     const float master = kickP.level;
     auto* l = dest.getWritePointer (0);
+    juce::AudioBuffer<float> sendBuf (dest.getNumChannels(), n);
+    sendBuf.clear();
+    auto* s0 = sendBuf.getWritePointer (0);
     for (int i = 0; i < n; ++i)
     {
-        float acc = 0.f;
+        float layer[k1x::kMixLayers];
         for (int L = 0; L < k1x::kMixLayers; ++L)
-            acc += storage[L][(size_t) i] * amp[L];
-        l[i] = acc * master;
+            layer[L] = storage[L][(size_t) i];
+        float dry = 0.f, send = 0.f;
+        k1x::layerSendMix (layer, amp, sendAmt, dry, send);
+        l[i] = dry * master;
+        s0[i] = send * master;
     }
     for (int ch = 1; ch < dest.getNumChannels(); ++ch)
+    {
         dest.copyFrom (ch, 0, dest, 0, 0, n);
+        sendBuf.copyFrom (ch, 0, sendBuf, 0, 0, n);
+    }
 
     // ponytail: two bars then keep the second, so the downbeat has the previous hit's tail.
     // A reverb longer than one bar still will not cycle cleanly.
@@ -446,7 +464,8 @@ void K1XAudioProcessor::renderBars (juce::AudioBuffer<float>& dest, double sampl
     {
         const int nThis = juce::jmin (block, n - pos);
         juce::AudioBuffer<float> view (dest.getArrayOfWritePointers(), dest.getNumChannels(), pos, nThis);
-        fx.process (view, bpm, apvts);
+        juce::AudioBuffer<float> sendView (sendBuf.getArrayOfWritePointers(), sendBuf.getNumChannels(), pos, nThis);
+        fx.process (view, bpm, apvts, &sendView);
         k1x::EqBandParam bands[k1x::eqBandCount];
         k1x::readEqBands (apvts, bands);
         eq.process (view, k1x::postEqEnabled (apvts), bands);
@@ -509,6 +528,8 @@ void K1XAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mi
 
     float amp[k1x::kMixLayers];
     fillAmps (amp);
+    float sendAmt[k1x::kMixLayers];
+    fillSends (sendAmt);
     auto* l = buffer.getWritePointer (0);
     const int n = buffer.getNumSamples();
     const int nEq = juce::jmin (n, layerScratch.getNumSamples());
@@ -548,18 +569,22 @@ void K1XAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mi
     }
     const float g = kickP.level;
     float peak[k1x::kMixLayers] = {};
+    const int sendN = juce::jmin (nEq, sendScratch.getNumSamples());
     for (int i = 0; i < nEq; ++i)
     {
-        float acc = 0.f;
+        float layer[k1x::kMixLayers];
         for (int L = 0; L < k1x::kMixLayers; ++L)
         {
-            const float y = layerScratch.getSample (L, i) * amp[L];
-            acc += y;
-            const float a = std::abs (y);
+            layer[L] = layerScratch.getSample (L, i);
+            const float a = std::abs (layer[L] * amp[L]);
             if (a > peak[L])
                 peak[L] = a;
         }
-        l[i] = acc * g;
+        float dry = 0.f, send = 0.f;
+        k1x::layerSendMix (layer, amp, sendAmt, dry, send);
+        l[i] = dry * g;
+        if (i < sendN)
+            sendScratch.setSample (0, i, send * g);
     }
     for (int i = nEq; i < n; ++i)
         l[i] = 0.f;
@@ -568,8 +593,12 @@ void K1XAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mi
 
     for (int ch = 1; ch < buffer.getNumChannels(); ++ch)
         buffer.copyFrom (ch, 0, buffer, 0, 0, n);
+    for (int i = sendN; i < sendScratch.getNumSamples() && i < n; ++i)
+        sendScratch.setSample (0, i, 0.f);
+    for (int ch = 1; ch < sendScratch.getNumChannels(); ++ch)
+        sendScratch.copyFrom (ch, 0, sendScratch, 0, 0, juce::jmin (n, sendScratch.getNumSamples()));
 
-    postFx.process (buffer, hostBpm(), apvts);
+    postFx.process (buffer, hostBpm(), apvts, &sendScratch);
     k1x::EqBandParam bands[k1x::eqBandCount];
     k1x::readEqBands (apvts, bands);
     postEq.process (buffer, k1x::postEqEnabled (apvts), bands);
@@ -586,12 +615,38 @@ void K1XAudioProcessor::renderWithPost (juce::AudioBuffer<float>& dest, double s
     if (n <= 0 || chs <= 0)
         return;
 
-    std::vector<float> dry ((size_t) n);
-    renderShot (dry.data(), n, sampleRate);
+    std::vector<float> storage[k1x::kMixLayers];
+    float* chan[k1x::kMixLayers];
+    for (int L = 0; L < k1x::kMixLayers; ++L)
+    {
+        storage[L].assign ((size_t) n, 0.f);
+        chan[L] = storage[L].data();
+    }
+    renderLayerChans (chan, n, sampleRate);
+    float amp[k1x::kMixLayers];
+    fillAmps (amp);
+    float sendAmt[k1x::kMixLayers];
+    fillSends (sendAmt);
+    const float master = currentParams().level;
+    juce::AudioBuffer<float> sendBuf (chs, n);
+    sendBuf.clear();
+    auto* d0 = dest.getWritePointer (0);
+    auto* s0 = sendBuf.getWritePointer (0);
     for (int i = 0; i < n; ++i)
-        dest.setSample (0, i, dry[(size_t) i]);
+    {
+        float layer[k1x::kMixLayers];
+        for (int L = 0; L < k1x::kMixLayers; ++L)
+            layer[L] = chan[L][i];
+        float dry = 0.f, send = 0.f;
+        k1x::layerSendMix (layer, amp, sendAmt, dry, send);
+        d0[i] = dry * master;
+        s0[i] = send * master;
+    }
     for (int ch = 1; ch < chs; ++ch)
+    {
         dest.copyFrom (ch, 0, dest, 0, 0, n);
+        sendBuf.copyFrom (ch, 0, sendBuf, 0, 0, n);
+    }
 
     k1x::PostFx fx;
     k1x::ParametricEq eq;
@@ -603,7 +658,8 @@ void K1XAudioProcessor::renderWithPost (juce::AudioBuffer<float>& dest, double s
     {
         const int nThis = juce::jmin (block, n - pos);
         juce::AudioBuffer<float> view (dest.getArrayOfWritePointers(), chs, pos, nThis);
-        fx.process (view, bpm, apvts);
+        juce::AudioBuffer<float> sendView (sendBuf.getArrayOfWritePointers(), chs, pos, nThis);
+        fx.process (view, bpm, apvts, &sendView);
         k1x::EqBandParam bands[k1x::eqBandCount];
         k1x::readEqBands (apvts, bands);
         eq.process (view, k1x::postEqEnabled (apvts), bands);

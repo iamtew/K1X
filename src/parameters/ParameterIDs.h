@@ -34,6 +34,7 @@ inline constexpr const char* lyGain[layerCount] = { "ly0Gain", "ly1Gain", "ly2Ga
 inline constexpr const char* lyMute[layerCount] = { "ly0Mute", "ly1Mute", "ly2Mute", "ly3Mute" };
 inline constexpr const char* lySolo[layerCount] = { "ly0Solo", "ly1Solo", "ly2Solo", "ly3Solo" };
 inline constexpr const char* lyFlip[layerCount] = { "ly0Flip", "ly1Flip", "ly2Flip", "ly3Flip" };
+inline constexpr const char* lySend[layerCount] = { "ly0Send", "ly1Send", "ly2Send", "ly3Send" };
 inline constexpr const char* lyDelay[layerCount] = { "ly0Delay", "ly1Delay", "ly2Delay", "ly3Delay" };
 
 inline constexpr const char* lyType[slotCount] = { "ly1Type", "ly2Type", "ly3Type" };

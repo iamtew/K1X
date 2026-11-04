@@ -70,6 +70,7 @@ void eachLayerVoiceId (Fn&& fn)
         fn (ParamID::lyMute[layer]);
         fn (ParamID::lySolo[layer]);
         fn (ParamID::lyFlip[layer]);
+        fn (ParamID::lySend[layer]);
         fn (ParamID::lyDelay[layer]);
     }
     for (int s = 0; s < ParamID::slotCount; ++s)

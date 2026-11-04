@@ -76,6 +76,7 @@ private:
     int lengthChoice() const;
     void fillSlots (k1x::SlotVoiceParams* out, float kickHz, float lengthSec) const;
     void fillAmps (float* out) const;
+    void fillSends (float* out) const;
 
     std::atomic<bool> loopOn { false };
     std::atomic<float> loopBpm { 140.f };
@@ -87,6 +88,7 @@ private:
     k1x::ParametricEq layerEq[k1x::kMixLayers];
     k1x::EqAnalyser layerAnalysers[k1x::kMixLayers];
     juce::AudioBuffer<float> layerScratch;
+    juce::AudioBuffer<float> sendScratch;
     k1x::PostFx postFx;
     k1x::ParametricEq postEq;
     k1x::EqAnalyser analyser;
