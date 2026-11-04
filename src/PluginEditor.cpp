@@ -70,9 +70,13 @@ void eachLayerVoiceId (Fn&& fn)
     {
         fn (ParamID::lyType[s]);
         fn (ParamID::lyBassTune[s]);
+        fn (ParamID::lyBassDrop[s]);
         fn (ParamID::lyBassDecay[s]);
         fn (ParamID::lyBassDrive[s]);
         fn (ParamID::lyBassHp[s]);
+        fn (ParamID::lyBassLp[s]);
+        fn (ParamID::lyBassLen[s]);
+        fn (ParamID::lyBassAtk[s]);
         fn (ParamID::lyNoiseDecay[s]);
         fn (ParamID::lyNoiseHp[s]);
         fn (ParamID::lyNoiseLp[s]);
@@ -82,9 +86,17 @@ void eachLayerVoiceId (Fn&& fn)
         fn (ParamID::lyClickPitch[s]);
         fn (ParamID::lyClickDecay[s]);
         fn (ParamID::lyClickTone[s]);
+        fn (ParamID::lyClickHp[s]);
+        fn (ParamID::lyClickLp[s]);
+        fn (ParamID::lyClickLen[s]);
+        fn (ParamID::lyClickAtk[s]);
         fn (ParamID::lySweepStart[s]);
         fn (ParamID::lySweepDrop[s]);
         fn (ParamID::lySweepDecay[s]);
+        fn (ParamID::lySweepDrive[s]);
+        fn (ParamID::lySweepLp[s]);
+        fn (ParamID::lySweepLen[s]);
+        fn (ParamID::lySweepAtk[s]);
     }
 }
 
@@ -1256,10 +1268,14 @@ void K1XAudioProcessorEditor::bindKnobs()
         if (type == ParamID::layerBass)
         {
             add (ParamID::lyBassTune[s], "Tune");
+            add (ParamID::lyBassDrop[s], "Drop");
             add (ParamID::lyBassDecay[s], "Decay");
             add (ParamID::lyBassDrive[s], "Drive");
             add (ParamID::lyBassHp[s], "HPF");
-            add (delay, "Delay");
+            add (ParamID::lyBassLp[s], "Tone");
+            add (ParamID::lyBassLen[s], "Length");
+            add (ParamID::lyBassAtk[s], "Attack");
+            add (delay, "Pre");
         }
         else if (type == ParamID::layerNoise)
         {
@@ -1275,14 +1291,22 @@ void K1XAudioProcessorEditor::bindKnobs()
             add (ParamID::lyClickPitch[s], "Pitch");
             add (ParamID::lyClickDecay[s], "Decay");
             add (ParamID::lyClickTone[s], "Tone");
-            add (delay, "Delay");
+            add (ParamID::lyClickHp[s], "HPF");
+            add (ParamID::lyClickLp[s], "LPF");
+            add (ParamID::lyClickLen[s], "Length");
+            add (ParamID::lyClickAtk[s], "Attack");
+            add (delay, "Pre");
         }
         else if (type == ParamID::layerSweep)
         {
             add (ParamID::lySweepStart[s], "Start");
             add (ParamID::lySweepDrop[s], "Drop");
             add (ParamID::lySweepDecay[s], "Decay");
-            add (delay, "Delay");
+            add (ParamID::lySweepDrive[s], "Drive");
+            add (ParamID::lySweepLp[s], "Tone");
+            add (ParamID::lySweepLen[s], "Length");
+            add (ParamID::lySweepAtk[s], "Attack");
+            add (delay, "Pre");
         }
     }
 

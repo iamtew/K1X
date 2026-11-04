@@ -242,30 +242,43 @@ void K1XAudioProcessor::fillSlots (k1x::SlotVoiceParams* out, float kickHz, floa
         auto& d = out[s];
         d.type = juce::roundToInt (raw (ParamID::lyType[s]));
         const float delay = raw (ParamID::lyDelay[ParamID::layerOfSlot (s)]);
+        auto layerLen = [&] (const char* id)
+        {
+            const float ms = raw (id);
+            return ms > 0.f ? ms * 0.001f : lengthSec;
+        };
         d.bass.tuneHz = kickHz * std::pow (2.f, raw (ParamID::lyBassTune[s]) / 12.f);
+        d.bass.dropOct = raw (ParamID::lyBassDrop[s]);
         d.bass.decay = raw (ParamID::lyBassDecay[s]);
         d.bass.drive = raw (ParamID::lyBassDrive[s]);
         d.bass.hpfHz = raw (ParamID::lyBassHp[s]);
+        d.bass.lpfHz = raw (ParamID::lyBassLp[s]);
         d.bass.delayMs = delay;
-        d.bass.lengthSec = lengthSec;
+        d.bass.attackMs = raw (ParamID::lyBassAtk[s]);
+        d.bass.lengthSec = layerLen (ParamID::lyBassLen[s]);
         d.noise.decay = raw (ParamID::lyNoiseDecay[s]);
         d.noise.hpfHz = raw (ParamID::lyNoiseHp[s]);
         d.noise.lpfHz = raw (ParamID::lyNoiseLp[s]);
         d.noise.delayMs = delay;
         d.noise.attackMs = raw (ParamID::lyNoiseAtk[s]);
         d.noise.type = juce::roundToInt (raw (ParamID::lyNoiseType[s]));
-        const float noiseLenMs = raw (ParamID::lyNoiseLen[s]);
-        d.noise.lengthSec = noiseLenMs > 0.f ? noiseLenMs * 0.001f : lengthSec;
+        d.noise.lengthSec = layerLen (ParamID::lyNoiseLen[s]);
         d.click.pitchHz = raw (ParamID::lyClickPitch[s]);
         d.click.decayMs = raw (ParamID::lyClickDecay[s]);
         d.click.tone = raw (ParamID::lyClickTone[s]);
+        d.click.hpfHz = raw (ParamID::lyClickHp[s]);
+        d.click.lpfHz = raw (ParamID::lyClickLp[s]);
         d.click.delayMs = delay;
-        d.click.lengthSec = lengthSec;
+        d.click.attackMs = raw (ParamID::lyClickAtk[s]);
+        d.click.lengthSec = layerLen (ParamID::lyClickLen[s]);
         d.sweep.startHz = raw (ParamID::lySweepStart[s]);
         d.sweep.dropOct = raw (ParamID::lySweepDrop[s]);
         d.sweep.decay = raw (ParamID::lySweepDecay[s]);
+        d.sweep.drive = raw (ParamID::lySweepDrive[s]);
+        d.sweep.lpfHz = raw (ParamID::lySweepLp[s]);
         d.sweep.delayMs = delay;
-        d.sweep.lengthSec = lengthSec;
+        d.sweep.attackMs = raw (ParamID::lySweepAtk[s]);
+        d.sweep.lengthSec = layerLen (ParamID::lySweepLen[s]);
     }
 }
 
