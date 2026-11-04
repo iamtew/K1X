@@ -175,7 +175,12 @@ void applyStack (K1XAudioProcessor& proc, int index)
 } // namespace
 
 K1XAudioProcessor::K1XAudioProcessor()
-    : AudioProcessor (BusesProperties().withOutput ("Output", juce::AudioChannelSet::stereo(), true)),
+    : AudioProcessor (BusesProperties()
+                          .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
+                          .withOutput ("Kick", juce::AudioChannelSet::stereo(), false)
+                          .withOutput ("Slot 1", juce::AudioChannelSet::stereo(), false)
+                          .withOutput ("Slot 2", juce::AudioChannelSet::stereo(), false)
+                          .withOutput ("Slot 3", juce::AudioChannelSet::stereo(), false)),
       apvts (*this, nullptr, "PARAMS", createParameterLayout())
 {
     apvts.state.setProperty (kPatchName, kInitPatch, nullptr);
@@ -197,7 +202,7 @@ void K1XAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     }
     analyser.prepare (sampleRate);
     meter.prepare (sampleRate);
-    const int ch = juce::jmax (2, getTotalNumOutputChannels());
+    const int ch = juce::jmax (1, getMainBusNumOutputChannels());
     sendScratch.setSize (ch, cap, false, false, true);
     postFx.prepare (sampleRate, samplesPerBlock, ch);
     postEq.prepare (sampleRate, samplesPerBlock, ch);
@@ -206,10 +211,20 @@ void K1XAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 
 bool K1XAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
-    if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo()
-        && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono())
+    if (! layouts.getMainInputChannelSet().isDisabled())
         return false;
-    return layouts.getMainInputChannelSet().isDisabled();
+    const auto main = layouts.getMainOutputChannelSet();
+    if (main != juce::AudioChannelSet::stereo() && main != juce::AudioChannelSet::mono())
+        return false;
+    for (int i = 1; i < layouts.outputBuses.size(); ++i)
+    {
+        const auto set = layouts.getChannelSet (false, i);
+        if (! set.isDisabled()
+            && set != juce::AudioChannelSet::stereo()
+            && set != juce::AudioChannelSet::mono())
+            return false;
+    }
+    return true;
 }
 
 float K1XAudioProcessor::raw (const char* id) const
@@ -585,7 +600,8 @@ void K1XAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mi
     applyVelocity (kickP, amp, midiNote >= 0 ? midiVel : 127);
     float sendAmt[k1x::kMixLayers];
     fillSends (sendAmt);
-    auto* l = buffer.getWritePointer (0);
+    auto mainOut = getBusBuffer (buffer, false, 0);
+    auto* l = mainOut.getWritePointer (0);
     const int n = buffer.getNumSamples();
     const int nEq = juce::jmin (n, layerScratch.getNumSamples());
     int wait = loopWait;
@@ -628,7 +644,7 @@ void K1XAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mi
     fillWide (isWide);
     float peak[k1x::kMixLayers] = {};
     const int sendN = juce::jmin (nEq, sendScratch.getNumSamples());
-    auto* rch = buffer.getNumChannels() > 1 ? buffer.getWritePointer (1) : nullptr;
+    auto* rch = mainOut.getNumChannels() > 1 ? mainOut.getWritePointer (1) : nullptr;
     for (int i = 0; i < nEq; ++i)
     {
         float layer[k1x::kMixLayers];
@@ -658,20 +674,34 @@ void K1XAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Mi
     for (int L = 0; L < k1x::kMixLayers; ++L)
         layerMeters[L].setPeak (peak[L]);
 
-    for (int ch = 2; ch < buffer.getNumChannels(); ++ch)
-        buffer.copyFrom (ch, 0, buffer, 0, 0, n);
+    for (int bus = 1; bus <= k1x::kMixLayers && bus < getBusCount (false); ++bus)
+    {
+        if (auto* b = getBus (false, bus); b == nullptr || ! b->isEnabled())
+            continue;
+        auto stem = getBusBuffer (buffer, false, bus);
+        const int layer = bus - 1;
+        const int ns = juce::jmin (nEq, stem.getNumSamples());
+        const int chs = stem.getNumChannels();
+        for (int i = 0; i < ns; ++i)
+        {
+            const float y = layerScratch.getSample (layer, i) * amp[layer] * g;
+            for (int ch = 0; ch < chs; ++ch)
+                stem.setSample (ch, i, y);
+        }
+    }
+
     for (int i = sendN; i < sendScratch.getNumSamples() && i < n; ++i)
         sendScratch.setSample (0, i, 0.f);
     for (int ch = 1; ch < sendScratch.getNumChannels(); ++ch)
         sendScratch.copyFrom (ch, 0, sendScratch, 0, 0, juce::jmin (n, sendScratch.getNumSamples()));
 
-    postFx.process (buffer, hostBpm(), apvts, &sendScratch);
+    postFx.process (mainOut, hostBpm(), apvts, &sendScratch);
     k1x::EqBandParam bands[k1x::eqBandCount];
     k1x::readEqBands (apvts, bands);
-    postEq.process (buffer, k1x::postEqEnabled (apvts), bands);
+    postEq.process (mainOut, k1x::postEqEnabled (apvts), bands);
 
-    analyser.push (buffer);
-    meter.push (buffer);
+    analyser.push (mainOut);
+    meter.push (mainOut);
     k1x::clipSamples (buffer.getArrayOfWritePointers(), buffer.getNumChannels(), n);
 }
 

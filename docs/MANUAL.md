@@ -63,6 +63,8 @@ Sample knobs:
 
 **Volume** (title bar, right) — live master fader and a glance spectrum. Turns orange for ~800 ms if the output hits 0 dBFS.
 
+**Outputs** — stereo **Output** is always the full mix (Width, send FX, post EQ), so a host that ignores extra pins hears today. Optional extra stereo buses **Kick**, **Slot 1**, **Slot 2**, **Slot 3** are that mix layer after mute/solo/gain, before Width and post FX (L=R). Leave them off if you do not need stems.
+
 **Main / Effects** (title bar, next to the patch name) — chevrons or click to switch. Main is the kick. Effects is the send plus post EQ on one page.
 
 ## Post FX (Effects page)

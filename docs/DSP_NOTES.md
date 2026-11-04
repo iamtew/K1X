@@ -16,6 +16,7 @@
 - Length snap hard-gates with a 25 ms fade so the cut is not a click. Hold mode (default off) uses a 32 s ceiling instead of ~8 decays, so an 808 tail lives until the next trigger.
 - Post FX sit after the voice: each layer has a Send (default 1) into Distortion → Delay (tempo sync optional) → Reverb pre-delay (ms, or Sync snaps to 1/64…1/8) → Reverb, all fully wet. Dist types: Soft `tanh(x * drive)`, Hard clip, Fold `sin(x * drive)`, Diode (weaker negative). Drive is `1 + fxDstDrive * 12`. Shape offsets then subtracts DC. Tone is a post LP (skipped when fully open). Dry and FX faders mix. Defaults Dry=1 FX=0, Soft, open Tone, Shape centre, pre-delay 0 so old patches are unchanged.
 - Mix is mid (kick/bass/sweep/sample) plus Noise/Click layers. Width 0 copies L to R. Width > 0 Haas-delays the wide layers then high-passes the side at 120 Hz.
+- Extra output buses Kick / Slot 1–3 are optional, pre-Width, pre-FX copies of each mix layer. Main Output stays the full mix.
 - Duck (default 0) is a cosine dip of Duck Time (default 1.5 ms) on kick body and Bass slots, armed at the earliest Click-slot Pre, else kick Delay. Kick click noise is not ducked.
 - Post EQ is five RBJ biquads after the mixer. Analyser FFT is after the EQ. Output is then hard-clipped to ±1. The orange 0 dBFS flash uses the pre-clip peak.
 - WAV export is 24-bit, 44.1 or 48 kHz. Norm (default on) scales a 4× linear true-peak estimate to −0.1 dBTP. Same writer for the picker and drag-out.
