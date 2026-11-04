@@ -2,6 +2,8 @@
 
 Kick one-shot (909 default). MIDI note-on retriggers and sets body pitch from the note (A4 = 440 Hz). Tune knob is for Standalone Play, waveform, and WAV export.
 
+![Main: waveform, Style, Shape, Hold, Play, Loop, BPM, and kick knobs](screenshot1.png)
+
 ## Knobs
 
 - **Tune** — body frequency (note name and Hz). MIDI note-on still sets body pitch from the note (A4 = 440 Hz) without moving the knob.
@@ -28,7 +30,9 @@ Kick one-shot (909 default). MIDI note-on retriggers and sets body pitch from th
 
 ## Layers
 
-The rail next to the waveform adds Bass, Noise, Click, Sweep, or Sample on top of the kick. Each layer has gain/mute/solo/phase on Mix, a **Delay / Pre** (0–80 ms) before the hit, and its own EQ. A strip under the wave is always 0–80 ms: onset, attack length, mute (M) and solo (S). Shared on extra voices:
+The rail next to the waveform adds Bass, Noise, Click, Sweep, or Sample on top of the kick. Each layer has gain/mute/solo/phase on Mix, a **Delay / Pre** (0–80 ms) before the hit, and its own EQ (**EQ** in the toolbar). A strip under the wave is always 0–80 ms: onset, attack length, mute (M) and solo (S). Shared on extra voices:
+
+![Click layer selected on a Multi stack, with the 0–80 ms strip](screenshot-layer.png)
 
 - **Length** — how long the voice may speak (ms). Auto follows Decay, or the global Length snap when that is not Free.
 - **Attack** — fade-in after Pre (0–30 ms).
@@ -61,6 +65,10 @@ Sample knobs:
 - **Load** — one user file per slot (WAV/AIFF/FLAC). No factory library. Path is saved with the patch; a missing file is silence.
 - **HPF / LPF / Length / Pre** — same mix rail as the other types. No pitch shift.
 
+![Mix: Duck / Time and Kick, Click, Sweep, Bass strips](screenshot-mix.png)
+
+![Layer EQ on the Click slot](screenshot-eq.png)
+
 **Volume** (title bar, right) — live master fader and a glance spectrum. Turns orange for ~800 ms if the output hits 0 dBFS.
 
 **Outputs** — stereo **Output** is always the full mix (Width, send FX, post EQ), so a host that ignores extra pins hears today. Optional extra stereo buses **Kick**, **Slot 1**, **Slot 2**, **Slot 3** are that mix layer after mute/solo/gain, before Width and post FX (L=R). Leave them off if you do not need stems.
@@ -68,6 +76,8 @@ Sample knobs:
 **Main / Effects** (title bar, next to the patch name) — chevrons or click to switch. Main is the kick. Effects is the send plus post EQ on one page.
 
 ## Post FX (Effects page)
+
+![Effects: Dist type, delay sync, reverb, post EQ](screenshot2.png)
 
 Parallel send after the layered mix. **Dry** is the unprocessed mix; **FX** is Distortion → Delay → Reverb. Mix **Send** (per layer, default full) is how much of that layer goes into the send. Old patches stay the same. Turn Dist / Delay / Rev on per block.
 
@@ -83,6 +93,6 @@ Five-band parametric under the FX row. Spectrum is the live output after FX and 
 
 Click **K1X** + version in the top left for About and a GitHub update check.
 
-Standalone: **Play** previews. **Export WAV** (plugin and Standalone) writes one shot plus FX tail, 24-bit stereo, 44.1 or 48 kHz. **Norm** (default on) peak-normalizes to −0.1 dBTP; turn it off to keep the raw render. Drag the waveform onto a DAW or the desktop for the same WAV plus a `.k1xp`. Play is clipped at 0 dBFS so it does not splat; Volume still flashes orange if it would have hit 0 dBFS. The waveform is the layered mix you hear on Play, before post FX. Editing a slot overlays that layer on the mix.
+Standalone: **Play** is a one-shot. **Loop** (with **BPM**, 40–240, default 140) repeats until you hit Play again. Plugin hosts hide Play / Loop / BPM and use MIDI. **Export WAV** (plugin and Standalone) writes one shot plus FX tail, 24-bit stereo, 44.1 or 48 kHz. With Loop on, the file is **2 bars** at that BPM. **Norm** (default on) peak-normalizes to −0.1 dBTP; turn it off to keep the raw render. Drag the waveform onto a DAW or the desktop for the same WAV plus a `.k1xp`. Play is clipped at 0 dBFS so it does not splat; Volume still flashes orange if it would have hit 0 dBFS. The waveform is the layered mix you hear on Play, before post FX. Editing a slot overlays that layer on the mix.
 
 Drag the window corner to scale (40%–150%); the scale is saved with the session.

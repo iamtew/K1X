@@ -27,7 +27,7 @@
         <p class="tag">Kick drum. 909, 808, and friends.</p>
       </div>
     </div>
-    <p>Tune, click, decay, drive, filters, then a parallel FX send and post EQ. Length and reverb predelay can snap to the DAW tempo.</p>
+    <p>Tune, click, decay, drive, filters, extra layers and Mix, then a parallel FX send and post EQ. Length and reverb predelay can snap to the DAW tempo.</p>
     <p class="demo">
       <a href="K1X-DEMO1.mp3">K1X-DEMO1.mp3</a>
       <audio controls preload="metadata">
@@ -42,22 +42,34 @@
     <p class="meta">VST3 and standalone.</p>
 
     <figure>
-      <img class="shot" src="screenshot1.png" alt="K1X Main: waveform, Style, Length, and kick knobs">
-      <figcaption>Main — kick, length, Play, Export WAV.</figcaption>
+      <img class="shot" src="screenshot1.png" alt="K1X Main: waveform, Style, Shape, Hold, Play, Loop, and kick knobs">
+      <figcaption>Main — kick, Shape, Hold, Play, Loop, BPM.</figcaption>
     </figure>
     <figure>
-      <img class="shot" src="screenshot2.png" alt="K1X Effects: Dry/FX send, delay sync, reverb predelay, post EQ">
-      <figcaption>Effects — Dist / Delay / Reverb send and post EQ. Sync snaps delay and reverb predelay to the tempo.</figcaption>
+      <img class="shot" src="screenshot2.png" alt="K1X Effects: Dist type, delay sync, reverb, post EQ">
+      <figcaption>Effects — Dist (Soft / Hard / Fold / Diode), Delay / Reverb send, and post EQ. Sync snaps delay and reverb predelay to the tempo.</figcaption>
+    </figure>
+    <figure>
+      <img class="shot" src="screenshot-layer.png" alt="K1X Main with a Click layer selected and the 0–80 ms timing strip">
+      <figcaption>Layer — Click slot on a Multi stack. The strip under the wave is always 0–80 ms.</figcaption>
+    </figure>
+    <figure>
+      <img class="shot" src="screenshot-mix.png" alt="K1X Mix: Duck and Time knobs plus per-layer faders">
+      <figcaption>Mix — Duck / Time, then Kick and slot faders with mute, solo, phase, and Send.</figcaption>
+    </figure>
+    <figure>
+      <img class="shot" src="screenshot-eq.png" alt="K1X per-layer EQ on the Click slot">
+      <figcaption>Layer EQ — five bands on the selected slot. The same editor is post EQ on Effects.</figcaption>
     </figure>
 
     <section id="sound" class="card">
       <h2>Sound</h2>
-      <p>Sine body with a pitch drop and a noise click, then saturation, high-pass, tone, and lo/hi shelves. Main page is the kick. Effects page is Dry/FX (distortion, delay, reverb) plus post EQ. Reverb predelay is milliseconds, or Sync detents the knob to 1/64–1/8. Spectrum is the processed output. Waveform preview stays the dry kick.</p>
+      <p>Sine or triangle body with a pitch drop and a noise click, then saturation, high-pass, tone, and lo/hi shelves. The rail adds Bass, Noise, Click, Sweep, or Sample. Mix is Duck plus per-layer faders. Effects is Dry/FX (Dist Soft / Hard / Fold / Diode, delay, reverb) plus post EQ. Reverb predelay is milliseconds, or Sync detents the knob to 1/64–1/8. Spectrum is the processed output. The waveform is the layered mix before post FX.</p>
     </section>
 
     <section id="standalone" class="card">
       <h2>Standalone</h2>
-      <p>Play previews the kick. Export WAV writes a stereo shot including FX tail.</p>
+      <p>Play is a one-shot. Loop (BPM 40–240, default 140) repeats until you hit Play again. Export WAV writes a 24-bit stereo shot including FX tail, 44.1 or 48 kHz. Norm (default on) peaks to −0.1 dBTP. With Loop on, the file is 2 bars at that BPM.</p>
     </section>
 
     <section id="notes">
