@@ -18,6 +18,7 @@
             file="src/PluginEditor.cpp"/>
       <GROUP id="dspGrp01" name="dsp">
         <FILE id="kckH001" name="KickVoice.h" compile="0" resource="0" file="src/dsp/KickVoice.h"/>
+        <FILE id="lyrH001" name="Layers.h" compile="0" resource="0" file="src/dsp/Layers.h"/>
         <FILE id="rndH001" name="KickRender.h" compile="0" resource="0" file="src/dsp/KickRender.h"/>
         <FILE id="scpH001" name="OutputScope.h" compile="0" resource="0" file="src/dsp/OutputScope.h"/>
         <FILE id="eqbH001" name="EqBiquad.h" compile="0" resource="0" file="src/dsp/EqBiquad.h"/>

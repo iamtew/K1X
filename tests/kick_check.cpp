@@ -1,6 +1,7 @@
 #include "dsp/Distortion.h"
 #include "dsp/EqBiquad.h"
 #include "dsp/KickRender.h"
+#include "dsp/Layers.h"
 #include "presets/FactoryPresets.h"
 #include "ui/VersionCompare.h"
 
@@ -113,6 +114,57 @@ int main()
         for (int i = 0; i < 8; ++i)
             dc += k1x::distortSample (k1x::distSoft, 0.f, drive, 0.2f);
         assert (std::abs (dc) < 1e-5f);
+    }
+
+    {
+        k1x::KickVoice::Params late = p;
+        late.delayMs = 20.f;
+        late.lengthSec = 0.f;
+        late.style = 0;
+        k1x::renderKick (buf.data(), (int) buf.size(), 44100.0, late);
+        float pre = 0.f;
+        const int preN = (int) (0.015f * 44100.f);
+        for (int i = 0; i < preN; ++i)
+            pre = std::max (pre, std::abs (buf[(size_t) i]));
+        assert (pre < 1.0e-6f);
+
+        k1x::BassVoice::Params bass;
+        bass.tuneHz = 40.f;
+        bass.decay = 0.4f;
+        bass.delayMs = 10.f;
+        k1x::renderBass (buf.data(), (int) buf.size(), 44100.0, bass);
+        pre = 0.f;
+        const int bassPre = (int) (0.008f * 44100.f);
+        for (int i = 0; i < bassPre; ++i)
+            pre = std::max (pre, std::abs (buf[(size_t) i]));
+        assert (pre < 1.0e-6f);
+        float body = 0.f;
+        for (int i = (int) (0.02f * 44100.f); i < (int) (0.08f * 44100.f); ++i)
+            body = std::max (body, std::abs (buf[(size_t) i]));
+        assert (body > 0.05f);
+
+        k1x::NoiseVoice::Params nz;
+        k1x::renderNoise (buf.data(), (int) buf.size(), 44100.0, nz);
+        float nrg = 0.f;
+        for (int i = 0; i < 4000; ++i)
+            nrg += buf[(size_t) i] * buf[(size_t) i];
+        assert (nrg > 0.01f);
+
+        k1x::ClickVoice::Params ck;
+        ck.decayMs = 5.f;
+        ck.lengthSec = 0.f;
+        k1x::renderClickLayer (buf.data(), (int) buf.size(), 44100.0, ck);
+        float clickTail = 0.f;
+        for (int i = (int) (0.05f * 44100.f); i < (int) buf.size(); ++i)
+            clickTail = std::max (clickTail, std::abs (buf[(size_t) i]));
+        assert (clickTail < 1.0e-4f);
+
+        k1x::SweepVoice::Params sw;
+        k1x::renderSweep (buf.data(), (int) buf.size(), 44100.0, sw);
+        float swPeak = 0.f;
+        for (int i = 0; i < 8000; ++i)
+            swPeak = std::max (swPeak, std::abs (buf[(size_t) i]));
+        assert (swPeak > 0.05f);
     }
 
     assert (k1x::factoryPresetCount >= 60);

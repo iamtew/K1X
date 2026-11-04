@@ -33,6 +33,7 @@ struct KickVoice
         float hi         = 0.45f;
         float level      = 0.75f;  // applied after the voice (live master)
         float lengthSec  = 0.f;    // 0 = free (follow decay)
+        float delayMs    = 0.f;    // silence before the hit, so layers can sit late
         int   style      = 0;      // 0=909 1=808 2=707 3=Tight 4=Hard
     };
 
@@ -49,6 +50,10 @@ struct KickVoice
         phase = 0.0;
         noise = 0xAce1u;
         active_ = true;
+        delayLeft = (int) (sr * (double) params.delayMs * 0.001);
+        if (delayLeft < 0)
+            delayLeft = 0;
+        waiting_ = delayLeft > 0;
         applyStyle();
         // Keep filter state on retrigger — zeroing it pops.
 
@@ -79,6 +84,14 @@ struct KickVoice
     {
         if (! active_)
             return 0.f;
+
+        if (waiting_)
+        {
+            --delayLeft;
+            if (delayLeft > 0)
+                return 0.f;
+            waiting_ = false;
+        }
 
         const double t = (double) pos / sr;
         // Pitch envelope is roughly exponential down to the tuned fundamental.
@@ -189,7 +202,9 @@ private:
     int totalN = 0;
     int attackN = 1;
     int fadeN = 8;
+    int delayLeft = 0;
     bool active_ = false;
+    bool waiting_ = false;
     std::uint32_t noise = 1;
     float hpZ = 0, lpZ = 0, loZ = 0, hiZ = 0, clickLp = 0;
     float clickTau = 0.004f, clickMul = 1.f, pitchDec = 0.04f, ampDec = 0.35f, harmonic = 0.f;

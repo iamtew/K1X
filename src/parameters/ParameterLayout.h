@@ -155,5 +155,83 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout
             ParameterID { ParamID::postEqQ[b], 1 }, n + " Q", eqQ, 0.7f));
     }
 
+    auto semiR = NormalisableRange<float> (-24.f, 12.f, 1.f);
+    auto delayR = NormalisableRange<float> (0.f, 40.f, 0.1f);
+    auto clickMsR = NormalisableRange<float> (0.5f, 40.f, 0.1f, 0.4f);
+    auto noiseHpR = NormalisableRange<float> (80.f, 8000.f, 1.f, 0.3f);
+    auto noiseLpR = NormalisableRange<float> (200.f, 16000.f, 1.f, 0.3f);
+    auto clickHzR = NormalisableRange<float> (200.f, 8000.f, 1.f, 0.3f);
+    auto sweepHzR = NormalisableRange<float> (40.f, 4000.f, 1.f, 0.3f);
+    auto sweepDropR = NormalisableRange<float> (0.f, 5.f, 0.01f);
+    auto sweepDecR = NormalisableRange<float> (0.02f, 0.5f, 0.001f, 0.4f);
+    auto noiseDecR = NormalisableRange<float> (0.02f, 1.5f, 0.001f, 0.4f);
+    const char* slotName[] = { "L2", "L3", "L4" };
+
+    auto msAttrs = [] (NormalisableRange<float> range)
+    {
+        return AudioParameterFloatAttributes()
+            .withStringFromValueFunction ([] (float v, int)
+            {
+                return String (v, v < 10.f ? 1 : 0) + " ms";
+            })
+            .withValueFromStringFunction ([range] (const String& t)
+            {
+                return jlimit (range.start, range.end, t.getFloatValue());
+            });
+    };
+    auto semiAttrs = AudioParameterFloatAttributes()
+                         .withStringFromValueFunction ([] (float v, int)
+                         {
+                             const int s = roundToInt (v);
+                             return (s > 0 ? "+" : "") + String (s) + " st";
+                         })
+                         .withValueFromStringFunction ([semiR] (const String& t)
+                         {
+                             return jlimit (semiR.start, semiR.end, t.getFloatValue());
+                         });
+
+    for (int i = 0; i < ParamID::layerCount; ++i)
+    {
+        const String who = i == 0 ? "Kick" : String ("L") + String (i + 1);
+        addUnit (ParamID::lyGain[i], (who + " Gain").toRawUTF8(), 1.f);
+        addOn (ParamID::lyMute[i], (who + " Mute").toRawUTF8());
+        addOn (ParamID::lySolo[i], (who + " Solo").toRawUTF8());
+        addOn (ParamID::lyFlip[i], (who + " Phase").toRawUTF8());
+        layout.add (std::make_unique<AudioParameterFloat> (
+            ParameterID { ParamID::lyDelay[i], 1 }, who + " Delay", delayR, 0.f, msAttrs (delayR)));
+    }
+
+    for (int s = 0; s < ParamID::slotCount; ++s)
+    {
+        const String who (slotName[s]);
+        layout.add (std::make_unique<AudioParameterChoice> (
+            ParameterID { ParamID::lyType[s], 1 }, who + " Type",
+            StringArray { "Off", "Bass", "Noise", "Click", "Sweep" }, 0));
+        layout.add (std::make_unique<AudioParameterFloat> (
+            ParameterID { ParamID::lyBassTune[s], 1 }, who + " Bass Tune", semiR, -12.f, semiAttrs));
+        layout.add (std::make_unique<AudioParameterFloat> (
+            ParameterID { ParamID::lyBassDecay[s], 1 }, who + " Bass Decay", decR, 0.5f, pct (decR)));
+        addUnit (ParamID::lyBassDrive[s], (who + " Bass Drive").toRawUTF8(), 0.15f);
+        layout.add (std::make_unique<AudioParameterFloat> (
+            ParameterID { ParamID::lyBassHp[s], 1 }, who + " Bass HPF", hpR, 20.f, hzAttrs (hpR)));
+        layout.add (std::make_unique<AudioParameterFloat> (
+            ParameterID { ParamID::lyNoiseDecay[s], 1 }, who + " Noise Decay", noiseDecR, 0.12f, pct (noiseDecR)));
+        layout.add (std::make_unique<AudioParameterFloat> (
+            ParameterID { ParamID::lyNoiseHp[s], 1 }, who + " Noise HPF", noiseHpR, 800.f, hzAttrs (noiseHpR)));
+        layout.add (std::make_unique<AudioParameterFloat> (
+            ParameterID { ParamID::lyNoiseLp[s], 1 }, who + " Noise LPF", noiseLpR, 6000.f, hzAttrs (noiseLpR)));
+        layout.add (std::make_unique<AudioParameterFloat> (
+            ParameterID { ParamID::lyClickPitch[s], 1 }, who + " Click Pitch", clickHzR, 2500.f, hzAttrs (clickHzR)));
+        layout.add (std::make_unique<AudioParameterFloat> (
+            ParameterID { ParamID::lyClickDecay[s], 1 }, who + " Click Decay", clickMsR, 8.f, msAttrs (clickMsR)));
+        addUnit (ParamID::lyClickTone[s], (who + " Click Tone").toRawUTF8(), 0.35f);
+        layout.add (std::make_unique<AudioParameterFloat> (
+            ParameterID { ParamID::lySweepStart[s], 1 }, who + " Sweep Start", sweepHzR, 400.f, hzAttrs (sweepHzR)));
+        layout.add (std::make_unique<AudioParameterFloat> (
+            ParameterID { ParamID::lySweepDrop[s], 1 }, who + " Sweep Drop", sweepDropR, 2.f, pct (sweepDropR)));
+        layout.add (std::make_unique<AudioParameterFloat> (
+            ParameterID { ParamID::lySweepDecay[s], 1 }, who + " Sweep Decay", sweepDecR, 0.08f, pct (sweepDecR)));
+    }
+
     return layout;
 }
