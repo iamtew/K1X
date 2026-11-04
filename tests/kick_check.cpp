@@ -352,6 +352,41 @@ int main()
             both += (layer[0] + layer[1]) * (layer[0] + layer[1]);
         }
         assert (both > 0.05f);
+
+        // Retrigger on a loud sample: splice step must be small vs the tail.
+        {
+            k1x::LayerStack st;
+            st.prepare (44100.0);
+            k1x::KickVoice::Params p;
+            p.tuneHz = 50.f;
+            p.decay = 0.5f;
+            p.punch = 0.2f;
+            p.click = 0.f;
+            st.trigger (p, nullptr);
+            bool hit = false;
+            for (int i = 0; i < 8000; ++i)
+            {
+                float layer[4];
+                st.tickInto (layer);
+                if (i < 200 || std::abs (layer[0]) < 0.15f)
+                    continue;
+                const float tail = layer[0];
+                st.trigger (p, nullptr);
+                float yPrev = tail;
+                float maxStep = 0.f;
+                const int win = (int) (0.005 * 44100);
+                for (int j = 0; j < win; ++j)
+                {
+                    st.tickInto (layer);
+                    maxStep = std::max (maxStep, std::abs (layer[0] - yPrev));
+                    yPrev = layer[0];
+                }
+                assert (maxStep < std::abs (tail) * 0.2f);
+                hit = true;
+                break;
+            }
+            assert (hit);
+        }
     }
 
     assert (k1x::factoryPresetCount >= 60);

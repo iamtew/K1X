@@ -55,7 +55,8 @@ struct KickVoice
             delayLeft = 0;
         waiting_ = delayLeft > 0;
         applyStyle();
-        // Keep filter state on retrigger — zeroing it pops.
+        // New hit starts at 0; LayerStack fades the previous sample so this does not pop.
+        resetFilters();
 
         const float attMs = punchToAttackMs (params.punch);
         attackN = (int) (sr * (double) attMs * 0.001);

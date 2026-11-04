@@ -474,10 +474,26 @@ struct LayerStack
             click[i].prepare (sampleRate);
             sweep[i].prepare (sampleRate);
         }
+        const double sr = sampleRate > 1.0 ? sampleRate : 44100.0;
+        fadeN = (int) (sr * 0.005);
+        if (fadeN < 4)
+            fadeN = 4;
+        for (int L = 0; L < kMixLayers; ++L)
+        {
+            last[L] = 0.f;
+            residual[L] = 0.f;
+            residualI[L] = 0;
+        }
     }
 
     void trigger (const KickVoice::Params& kickP, const SlotVoiceParams* slots)
     {
+        // Last mixed sample fades out so a live tail does not step to 0.
+        for (int L = 0; L < kMixLayers; ++L)
+        {
+            residual[L] = last[L];
+            residualI[L] = fadeN;
+        }
         kick.trigger (kickP);
         for (int s = 0; s < 3; ++s)
         {
@@ -504,6 +520,16 @@ struct LayerStack
         for (int s = 0; s < 3; ++s)
             layer[s + 1] = bass[s].process() + noise[s].process()
                          + click[s].process() + sweep[s].process();
+        for (int L = 0; L < kMixLayers; ++L)
+        {
+            if (residualI[L] > 0)
+            {
+                const float u = (float) residualI[L] / (float) fadeN;
+                layer[L] += residual[L] * (0.5f * (1.f - std::cos (3.141592653589793f * u)));
+                --residualI[L];
+            }
+            last[L] = layer[L];
+        }
     }
 
     KickVoice kick;
@@ -511,6 +537,12 @@ struct LayerStack
     NoiseVoice noise[3];
     ClickVoice click[3];
     SweepVoice sweep[3];
+
+private:
+    int fadeN = 4;
+    float last[kMixLayers] = {};
+    float residual[kMixLayers] = {};
+    int residualI[kMixLayers] = {};
 };
 
 inline void renderSweep (float* dest, int n, double sampleRate, const SweepVoice::Params& p)
