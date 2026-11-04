@@ -19,7 +19,7 @@ struct LayerClock
         sr = sampleRate > 1.0 ? sampleRate : 44100.0;
     }
 
-    void arm (float delayMs, float lifeSec)
+    void arm (float delayMs, float lifeSec, float attackMs = 0.f)
     {
         pos = 0;
         delayLeft = (int) (sr * (double) delayMs * 0.001);
@@ -38,6 +38,9 @@ struct LayerClock
             fadeN = totalN / 4;
         if (fadeN < 1)
             fadeN = 1;
+        attackN = (int) (sr * (double) attackMs * 0.001);
+        if (attackN < 0)
+            attackN = 0;
         active = true;
     }
 
@@ -71,6 +74,14 @@ struct LayerClock
         return 0.5f * (1.f - std::cos (3.141592653589793f * u));
     }
 
+    float attack() const
+    {
+        if (attackN <= 0 || pos >= attackN)
+            return 1.f;
+        const float u = (float) pos / (float) attackN;
+        return 0.5f * (1.f - std::cos (3.141592653589793f * u));
+    }
+
     void advance()
     {
         ++pos;
@@ -85,9 +96,20 @@ struct LayerClock
 private:
     int totalN = 0;
     int fadeN = 4;
+    int attackN = 0;
     int delayLeft = 0;
     bool waiting = false;
 };
+
+inline void layerSortBand (float& hp, float& lp)
+{
+    if (hp > lp)
+    {
+        const float s = hp;
+        hp = lp;
+        lp = s;
+    }
+}
 
 inline float layerOnePole (float hz, double sr)
 {
@@ -104,11 +126,14 @@ struct BassVoice
     struct Params
     {
         float tuneHz = 25.f;
+        float dropOct = 0.f;
         float decay = 0.5f;
         float drive = 0.15f;
         float hpfHz = 20.f;
+        float lpfHz = 8000.f;
         float delayMs = 0.f;
         float lengthSec = 0.f;
+        float attackMs = 0.f;
     };
 
     void prepare (double sampleRate) { clock.prepare (sampleRate); }
@@ -117,12 +142,13 @@ struct BassVoice
     {
         params = p;
         phase = 0.0;
+        hpZ = lpZ = 0.f;
         float life = params.decay * 8.f;
         if (life < 0.05f)
             life = 0.05f;
         if (params.lengthSec > 0.f)
             life = params.lengthSec;
-        clock.arm (params.delayMs, life);
+        clock.arm (params.delayMs, life, params.attackMs);
     }
 
     void silence() { clock.silence(); }
@@ -133,15 +159,25 @@ struct BassVoice
         if (! clock.tick())
             return 0.f;
         const double t = (double) clock.pos / clock.sr;
-        phase += (double) params.tuneHz / clock.sr;
+        const float dec = params.decay < 0.02f ? 0.02f : params.decay;
+        const float startHz = params.tuneHz * std::pow (2.f, params.dropOct < 0.f ? 0.f : params.dropOct);
+        const float freq = params.tuneHz
+            + (startHz - params.tuneHz) * std::exp ((float) (-t / (double) dec));
+        phase += (double) freq / clock.sr;
         if (phase >= 1.0)
             phase -= std::floor (phase);
         const float body = std::sin ((float) (phase * 6.283185307179586));
-        const float amp = std::exp ((float) (-t / (double) (params.decay < 0.02f ? 0.02f : params.decay)));
+        const float amp = std::exp ((float) (-t / (double) dec));
         float x = std::tanh (body * amp * (1.f + params.drive * 4.f));
-        const float c = layerOnePole (params.hpfHz, clock.sr);
-        hpZ += c * (x - hpZ);
-        const float y = (x - hpZ) * clock.fade();
+        float hp = params.hpfHz;
+        float lp = params.lpfHz;
+        layerSortBand (hp, lp);
+        const float hpC = layerOnePole (hp, clock.sr);
+        const float lpC = layerOnePole (lp, clock.sr);
+        hpZ += hpC * (x - hpZ);
+        const float high = x - hpZ;
+        lpZ += lpC * (high - lpZ);
+        const float y = lpZ * clock.attack() * clock.fade();
         clock.advance();
         return y;
     }
@@ -151,7 +187,7 @@ struct BassVoice
 private:
     LayerClock clock;
     double phase = 0.0;
-    float hpZ = 0.f;
+    float hpZ = 0.f, lpZ = 0.f;
 };
 
 struct NoiseVoice
@@ -183,10 +219,7 @@ struct NoiseVoice
             life = 0.03f;
         if (params.lengthSec > 0.f)
             life = params.lengthSec;
-        clock.arm (params.delayMs, life);
-        attackN = (int) (clock.sr * (double) params.attackMs * 0.001);
-        if (attackN < 0)
-            attackN = 0;
+        clock.arm (params.delayMs, life, params.attackMs);
     }
 
     void silence() { clock.silence(); }
@@ -216,24 +249,13 @@ struct NoiseVoice
         }
         float hp = params.hpfHz;
         float lp = params.lpfHz;
-        if (hp > lp)
-        {
-            const float s = hp;
-            hp = lp;
-            lp = s;
-        }
+        layerSortBand (hp, lp);
         const float hpC = layerOnePole (hp, clock.sr);
         const float lpC = layerOnePole (lp, clock.sr);
         hpZ += hpC * (n - hpZ);
         const float high = n - hpZ;
         lpZ += lpC * (high - lpZ);
-        float atk = 1.f;
-        if (attackN > 0 && clock.pos < attackN)
-        {
-            const float u = (float) clock.pos / (float) attackN;
-            atk = 0.5f * (1.f - std::cos (3.141592653589793f * u));
-        }
-        const float y = lpZ * amp * atk * clock.fade();
+        const float y = lpZ * amp * clock.attack() * clock.fade();
         clock.advance();
         return y;
     }
@@ -243,7 +265,6 @@ struct NoiseVoice
 private:
     LayerClock clock;
     std::uint32_t noise = 1;
-    int attackN = 0;
     float hpZ = 0.f, lpZ = 0.f;
     float pinkB0 = 0.f, pinkB1 = 0.f, pinkB2 = 0.f;
     float brownZ = 0.f;
@@ -256,8 +277,11 @@ struct ClickVoice
         float pitchHz = 2500.f;
         float decayMs = 8.f;
         float tone = 0.35f; // 0 noise, 1 sine
+        float hpfHz = 80.f;
+        float lpfHz = 16000.f;
         float delayMs = 0.f;
         float lengthSec = 0.f;
+        float attackMs = 0.f;
     };
 
     void prepare (double sampleRate) { clock.prepare (sampleRate); }
@@ -267,12 +291,13 @@ struct ClickVoice
         params = p;
         phase = 0.0;
         noise = 0xB16Bu;
+        hpZ = lpZ = 0.f;
         float life = params.decayMs * 0.004f; // ~4 decays, decayMs is milliseconds
         if (life < 0.008f)
             life = 0.008f;
         if (params.lengthSec > 0.f)
             life = params.lengthSec;
-        clock.arm (params.delayMs, life);
+        clock.arm (params.delayMs, life, params.attackMs);
     }
 
     void silence() { clock.silence(); }
@@ -292,7 +317,16 @@ struct ClickVoice
         noise = noise * 1664525u + 1013904223u;
         const float n = ((float) (int) (noise >> 8) * (1.f / 8388608.f)) - 1.f;
         const float tone = params.tone < 0.f ? 0.f : (params.tone > 1.f ? 1.f : params.tone);
-        const float y = (tone * sine + (1.f - tone) * n) * amp * clock.fade();
+        float x = (tone * sine + (1.f - tone) * n) * amp;
+        float hp = params.hpfHz;
+        float lp = params.lpfHz;
+        layerSortBand (hp, lp);
+        const float hpC = layerOnePole (hp, clock.sr);
+        const float lpC = layerOnePole (lp, clock.sr);
+        hpZ += hpC * (x - hpZ);
+        const float high = x - hpZ;
+        lpZ += lpC * (high - lpZ);
+        const float y = lpZ * clock.attack() * clock.fade();
         clock.advance();
         return y;
     }
@@ -303,6 +337,7 @@ private:
     LayerClock clock;
     double phase = 0.0;
     std::uint32_t noise = 1;
+    float hpZ = 0.f, lpZ = 0.f;
 };
 
 struct SweepVoice
@@ -312,8 +347,11 @@ struct SweepVoice
         float startHz = 400.f;
         float dropOct = 2.f;
         float decay = 0.08f;
+        float drive = 0.f;
+        float lpfHz = 8000.f;
         float delayMs = 0.f;
         float lengthSec = 0.f;
+        float attackMs = 0.f;
     };
 
     void prepare (double sampleRate) { clock.prepare (sampleRate); }
@@ -322,12 +360,13 @@ struct SweepVoice
     {
         params = p;
         phase = 0.0;
+        lpZ = 0.f;
         float life = params.decay * 6.f;
         if (life < 0.03f)
             life = 0.03f;
         if (params.lengthSec > 0.f)
             life = params.lengthSec;
-        clock.arm (params.delayMs, life);
+        clock.arm (params.delayMs, life, params.attackMs);
     }
 
     void silence() { clock.silence(); }
@@ -346,7 +385,12 @@ struct SweepVoice
         if (phase >= 1.0)
             phase -= std::floor (phase);
         const float amp = std::exp ((float) (-t / (double) dec));
-        const float y = std::sin ((float) (phase * 6.283185307179586)) * amp * clock.fade();
+        float x = std::sin ((float) (phase * 6.283185307179586)) * amp;
+        if (params.drive > 0.f)
+            x = std::tanh (x * (1.f + params.drive * 4.f));
+        const float lpC = layerOnePole (params.lpfHz, clock.sr);
+        lpZ += lpC * (x - lpZ);
+        const float y = lpZ * clock.attack() * clock.fade();
         clock.advance();
         return y;
     }
@@ -356,6 +400,7 @@ struct SweepVoice
 private:
     LayerClock clock;
     double phase = 0.0;
+    float lpZ = 0.f;
 };
 
 inline void renderBass (float* dest, int n, double sampleRate, const BassVoice::Params& p)
