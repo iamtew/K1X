@@ -83,6 +83,8 @@ Five-band parametric under the FX row. Spectrum is the live output after FX and 
 
 Click **K1X** + version in the top left for About and a GitHub update check.
 
-Standalone: **Play** previews. **Export WAV** (plugin and Standalone) writes one shot plus FX tail, 24-bit stereo, 44.1 or 48 kHz. **Norm** (default on) peak-normalizes to −0.1 dBTP; turn it off to keep the raw render. Drag the waveform onto a DAW or the desktop for the same WAV plus a `.k1xp`. Play is clipped at 0 dBFS so it does not splat; Volume still flashes orange if it would have hit 0 dBFS. The waveform is the layered mix you hear on Play, before post FX. Editing a slot overlays that layer on the mix.
+**Play / Loop / BPM** (plugin and Standalone) — Play fires one shot. Loop + Play is 4-on-the-floor at BPM while you turn Drop. Off by default. MIDI note-ons still retrigger. **Hats** (off) adds quiet 8th-note hats after FX so they do not go through Drive. **Hats** on Mix is the level (default low). **Bed** loads a user WAV/AIFF/FLAC that loops with Play+Loop at file rate (no stretch); Clear removes it. Not a DAW.
+
+**Export WAV** (plugin and Standalone) writes one shot plus FX tail, 24-bit stereo, 44.1 or 48 kHz. **Norm** (default on) peak-normalizes to −0.1 dBTP; turn it off to keep the raw render. Drag the waveform onto a DAW or the desktop for the same WAV plus a `.k1xp`. Play is clipped at 0 dBFS so it does not splat; Volume still flashes orange if it would have hit 0 dBFS. The waveform is the layered mix you hear on Play, before post FX. Editing a slot overlays that layer on the mix. Hats and Bed are live context only; they are not in the waveform or WAV.
 
 Drag the window corner to scale (40%–150%); the scale is saved with the session.
