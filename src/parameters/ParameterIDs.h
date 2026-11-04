@@ -39,9 +39,13 @@ inline constexpr const char* lyDelay[layerCount] = { "ly0Delay", "ly1Delay", "ly
 inline constexpr const char* lyType[slotCount] = { "ly1Type", "ly2Type", "ly3Type" };
 
 inline constexpr const char* lyBassTune[slotCount]  = { "ly1BassTune", "ly2BassTune", "ly3BassTune" };
+inline constexpr const char* lyBassDrop[slotCount]  = { "ly1BassDrop", "ly2BassDrop", "ly3BassDrop" };
 inline constexpr const char* lyBassDecay[slotCount] = { "ly1BassDecay", "ly2BassDecay", "ly3BassDecay" };
 inline constexpr const char* lyBassDrive[slotCount] = { "ly1BassDrive", "ly2BassDrive", "ly3BassDrive" };
 inline constexpr const char* lyBassHp[slotCount]    = { "ly1BassHp", "ly2BassHp", "ly3BassHp" };
+inline constexpr const char* lyBassLp[slotCount]    = { "ly1BassLp", "ly2BassLp", "ly3BassLp" };
+inline constexpr const char* lyBassLen[slotCount]   = { "ly1BassLen", "ly2BassLen", "ly3BassLen" };
+inline constexpr const char* lyBassAtk[slotCount]   = { "ly1BassAtk", "ly2BassAtk", "ly3BassAtk" };
 
 inline constexpr const char* lyNoiseDecay[slotCount] = { "ly1NoiseDecay", "ly2NoiseDecay", "ly3NoiseDecay" };
 inline constexpr const char* lyNoiseHp[slotCount]    = { "ly1NoiseHp", "ly2NoiseHp", "ly3NoiseHp" };
@@ -57,10 +61,18 @@ inline constexpr int noiseBrown = 2;
 inline constexpr const char* lyClickPitch[slotCount] = { "ly1ClickPitch", "ly2ClickPitch", "ly3ClickPitch" };
 inline constexpr const char* lyClickDecay[slotCount] = { "ly1ClickDecay", "ly2ClickDecay", "ly3ClickDecay" };
 inline constexpr const char* lyClickTone[slotCount]  = { "ly1ClickTone", "ly2ClickTone", "ly3ClickTone" };
+inline constexpr const char* lyClickHp[slotCount]    = { "ly1ClickHp", "ly2ClickHp", "ly3ClickHp" };
+inline constexpr const char* lyClickLp[slotCount]    = { "ly1ClickLp", "ly2ClickLp", "ly3ClickLp" };
+inline constexpr const char* lyClickLen[slotCount]   = { "ly1ClickLen", "ly2ClickLen", "ly3ClickLen" };
+inline constexpr const char* lyClickAtk[slotCount]   = { "ly1ClickAtk", "ly2ClickAtk", "ly3ClickAtk" };
 
 inline constexpr const char* lySweepStart[slotCount] = { "ly1SweepStart", "ly2SweepStart", "ly3SweepStart" };
 inline constexpr const char* lySweepDrop[slotCount]  = { "ly1SweepDrop", "ly2SweepDrop", "ly3SweepDrop" };
 inline constexpr const char* lySweepDecay[slotCount] = { "ly1SweepDecay", "ly2SweepDecay", "ly3SweepDecay" };
+inline constexpr const char* lySweepDrive[slotCount] = { "ly1SweepDrive", "ly2SweepDrive", "ly3SweepDrive" };
+inline constexpr const char* lySweepLp[slotCount]    = { "ly1SweepLp", "ly2SweepLp", "ly3SweepLp" };
+inline constexpr const char* lySweepLen[slotCount]   = { "ly1SweepLen", "ly2SweepLen", "ly3SweepLen" };
+inline constexpr const char* lySweepAtk[slotCount]   = { "ly1SweepAtk", "ly2SweepAtk", "ly3SweepAtk" };
 
 inline constexpr const char* lyEqOn[layerCount] = { "ly0EqOn", "ly1EqOn", "ly2EqOn", "ly3EqOn" };
 inline constexpr const char* lyEqType[layerCount][eqBandCount] = {
