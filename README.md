@@ -14,7 +14,7 @@ The `dist` artifact holds:
 
 - `K1X-<version>-win-x64-vst3.zip`
 - `K1X-<version>-win-x64-standalone.zip`
-- `K1X-<version>-win-x64.msi`
+- `K1X-<version>-win-x64-installer.msi`
 - `K1X-<version>-linux-x64-vst3.zip`
 - `K1X-<version>-linux-x64-standalone.zip`
 - `K1X-<version>-mac-universal-vst3.zip`
