@@ -20,9 +20,12 @@ constexpr const char* kPatchExt = ".k1xp";
 
 juce::File libraryRoot()
 {
-    return juce::File::getSpecialLocation (juce::File::userApplicationDataDirectory)
-        .getChildFile ("Stupid Systems LLC")
-        .getChildFile ("K1X");
+    const auto appData = juce::File::getSpecialLocation (juce::File::userApplicationDataDirectory);
+    auto neu = appData.getChildFile ("Stupid Audio").getChildFile ("K1X");
+    const auto old = appData.getChildFile ("Stupid Systems LLC").getChildFile ("K1X");
+    if (! neu.isDirectory() && old.isDirectory())
+        old.copyDirectoryTo (neu);
+    return neu;
 }
 
 juce::File ensureDir (juce::File dir)

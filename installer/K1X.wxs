@@ -3,7 +3,7 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
      xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
   <Package Name="K1X"
-           Manufacturer="Stupid Systems LLC"
+           Manufacturer="Stupid Audio"
            Version="$(var.ProductVersion)"
            UpgradeCode="B7E2C4A1-3D58-4F90-A6C2-91E4D8F0A5B3"
            Scope="perMachine">
@@ -20,7 +20,7 @@
     <ui:WixUI Id="WixUI_FeatureTree" />
 
     <StandardDirectory Id="ProgramFiles6432Folder">
-      <Directory Id="CompanyFolder" Name="Stupid Systems LLC">
+      <Directory Id="CompanyFolder" Name="Stupid Audio">
         <Directory Id="INSTALLFOLDER" Name="K1X">
           <Component Id="Standalone" Guid="*">
             <File Id="StandaloneExe" Name="K1X.exe" Source="!(bindpath.Standalone)K1X.exe" KeyPath="yes" />
@@ -41,7 +41,7 @@
                     Target="[INSTALLFOLDER]K1X.exe" />
           <RemoveFolder Id="RemoveProgramMenuDir" On="uninstall" />
           <RegistryValue Root="HKCU"
-                         Key="Software\Stupid Systems LLC\K1X"
+                         Key="Software\Stupid Audio\K1X"
                          Name="installed"
                          Type="integer"
                          Value="1"
@@ -66,7 +66,7 @@
     </Feature>
 
     <Feature Id="StandaloneFeature" Title="Standalone" Level="1" ConfigurableDirectory="INSTALLFOLDER"
-             Description="Standalone app and Start menu shortcut. Default folder is Program Files\Stupid Systems LLC\K1X.">
+             Description="Standalone app and Start menu shortcut. Default folder is Program Files\Stupid Audio\K1X.">
       <ComponentRef Id="Standalone" />
       <ComponentRef Id="StartMenuShortcut" />
     </Feature>
