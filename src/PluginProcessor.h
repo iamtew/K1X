@@ -73,8 +73,8 @@ public:
     juce::String slotSamplePath (int slot) const;
     void reloadSlotSamples();
 
-    // Editor scale (drag the corner). Saved with the session, not with patches.
-    float uiScale = 0.85f;
+    // Editor scale (drag the corner). Default 100%; saved with the session, not with patches.
+    float uiScale = 1.0f;
     double wavSr = 44100.0;
     bool wavNorm = true;
 

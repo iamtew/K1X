@@ -8,6 +8,7 @@ static_assert (ParamID::layerSweep == k1x::layerSweep, "layer type ids");
 static_assert (ParamID::layerSample == k1x::layerSample, "layer type ids");
 static_assert (ParamID::layerCount == k1x::kMixLayers, "layer count");
 
+#include <cmath>
 #include <cstring>
 #include <vector>
 
@@ -970,6 +971,8 @@ void K1XAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
         if (xml->hasTagName (apvts.state.getType()))
         {
             uiScale = juce::jlimit (0.4f, 1.5f, (float) xml->getDoubleAttribute ("uiScale", uiScale));  // sessions only, patches keep your size
+            if (std::abs (uiScale - 0.85f) < 0.001f)
+                uiScale = 1.f;
             wavSr = xml->getDoubleAttribute ("wavSr", wavSr) >= 47000.0 ? 48000.0 : 44100.0;
             wavNorm = xml->getIntAttribute ("wavNorm", wavNorm ? 1 : 0) != 0;
             xml->removeAttribute ("uiScale");  // don't leak into patch saves
