@@ -7,6 +7,7 @@ Kick drum VST3 + Standalone (909 / 808 / 707 / Tight / Hard). Not a circuit clon
 - C++17, real-time safe: no allocations, no locks, no system calls in processBlock
 - APVTS for all parameters
 - Just + justfile
+- `assets/logo.png` is the Affinity export. Source of truth. Never overwrite. `just icon` / `just docs-logo` derive the rest.
 
 ## Layout
 src/
