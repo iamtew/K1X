@@ -4,7 +4,7 @@
 
 **K1X** is a kick drum (909 default, plus 808 / 707 / Tight / Hard). Layers (Bass / Noise / Click / Sweep / Sample) and Mix sit on the one-shot. Tune, click, decay, drive, filters, parallel post FX, post EQ, length snap, WAV export with Norm.
 
-VST3 and standalone (Play / Loop / WAV export). Stupid Audio. [MIT](LICENSE). Site: [docs/](docs/index.html). Manual: [docs/MANUAL.md](docs/MANUAL.md).
+VST3 and standalone (Play / Loop / WAV export). Stupid Audio. [MIT](LICENSE). Site: [docs/](docs/index.html). Manual: [docs/docs.html](docs/docs.html).
 
 ## Release
 
