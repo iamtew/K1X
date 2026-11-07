@@ -2,7 +2,7 @@
 
 This file is the product spec.
 
-Kick one-shot. 909-ish default, plus 808 / 707 / Tight / Hard. Stupid Audio. MIT. Not a circuit clone.
+Kick one-shot. 909-ish default, plus 808 / 707 / Tight / Hard. Sister of TEW03. Stupid Audio. MIT. Not a circuit clone.
 
 - Tune the one-shot with a fixed chain (drive, HP, LP, lo/hi)
 - Extra layers on the mix rail, including a user Sample
@@ -52,7 +52,7 @@ Per-layer EQ. Effects page: Dist → Delay → Reverb send + 5-band post EQ.
 
 ## Stack
 
-- JUCE, Projucer workflow only
+- JUCE from `%USERPROFILE%\JUCE`, Projucer workflow only
 - C++17, APVTS for all parameters
 - Just + justfile
 - Jucer `version=` is the binary, About dialog, git tag, and `just build-dist` name.
@@ -63,8 +63,10 @@ Steel-blue chassis. Do not invent another palette.
 
 - `#0f151e` background
 - `#1a2332` chassis
+- `#151515` ink
 - `#b7c5d6` metal
 - `#d94214` orange
+- `#000000` black
 - `#ffffff` white
 
 `assets/logo.png` is the Affinity export. Source of truth. Never overwrite. `just icon` / `just docs-logo` derive the rest.
