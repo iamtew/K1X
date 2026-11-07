@@ -1,5 +1,7 @@
 # K1X – Cursor Rules
 
+Spec: [docs/SPEC.md](docs/SPEC.md).
+
 Kick drum VST3 + Standalone (909 / 808 / 707 / Tight / Hard). Not a circuit clone. Tune the one-shot with a fixed chain (drive, HP, LP, lo/hi).
 
 ## Stack
