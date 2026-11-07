@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>K1X | kick drum</title>
-  <meta name="description" content="kick drum">
+  <title>K1X</title>
+  <meta name="description" content="A free kick drum with 909, 808, 707, Tight, and Hard. Tune the one-shot, stack extra layers, then drive, delay, and EQ. VST3 and standalone.">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="K1X | kick drum">
-  <meta property="og:description" content="kick drum">
+  <meta property="og:title" content="K1X">
+  <meta property="og:description" content="A free kick drum with 909, 808, 707, Tight, and Hard. Tune the one-shot, stack extra layers, then drive, delay, and EQ. VST3 and standalone.">
   <meta property="og:url" content="https://iamtew.github.io/K1X/">
   <meta property="og:image" content="https://iamtew.github.io/K1X/ogimage-K1X.png">
   <meta property="og:image:width" content="1200">
@@ -21,77 +21,166 @@
   <canvas id="fx" aria-hidden="true"></canvas>
   <header>
     <a class="brand" href="#top"><img src="logo.png" alt="" width="36" height="36">K1X</a>
-    <nav>
-      <a href="#sound">Sound</a>
-      <a href="#standalone">Standalone</a>
-      <a href="notes.html?doc=MANUAL.md">Manual</a>
-      <a href="#notes">Notes</a>
+    <button type="button" class="nav-toggle" aria-expanded="false" aria-controls="site-nav" aria-label="Menu">
+      <svg class="icon" aria-hidden="true"><use href="icons.svg#menu"></use></svg>
+    </button>
+    <nav id="site-nav">
+      <a href="#main">Main</a>
+      <a href="#mix">Mix</a>
+      <a href="#effects">Effects</a>
+      <a href="docs.html">Manual</a>
       <a href="https://audio.stupid.systems/">Stupid Audio</a>
     </nav>
   </header>
 
-  <main id="top">
-    <div class="lead">
-      <img class="hero" src="logo.png" alt="K1X" width="160" height="160">
-      <div>
-        <h1>K1X</h1>
-        <p class="tag">Kick drum. 909, 808, and friends.</p>
+  <main id="top" class="landing">
+    <div class="hero-panel">
+      <div class="lead">
+        <img class="hero" src="logo.png" alt="K1X" width="160" height="160">
+        <div>
+          <h1>K1X</h1>
+          <p class="tag">Kick drum. 909, 808, and friends.</p>
+        </div>
       </div>
+      <p>You wanted a kick you can actually tune. K1X is a one-shot with 909, 808, 707, Tight, and Hard styles: body, click, decay, then drive, filters, extra layers, Mix, a parallel FX send, and post EQ. Length and reverb predelay can snap to the DAW tempo, so the tail lands on the grid instead of wherever it felt like going.</p>
+      <p>It is part of <a href="https://audio.stupid.systems/">Stupid Audio</a> — five free instruments in one pack. The other four live over there.</p>
+      <div class="demos">
+        <p class="demo">
+          <a href="K1X-DEMO1.mp3">K1X-DEMO1.mp3</a>
+          <audio controls preload="metadata">
+            <source src="K1X-DEMO1.mp3" type="audio/mpeg">
+            Your browser cannot play this demo.
+          </audio>
+        </p>
+      </div>
+      <p class="actions">
+        <button type="button" class="download" data-dl-open>
+          <svg class="icon" aria-hidden="true"><use href="icons.svg#download"></use></svg>
+          Download
+        </button>
+        <a class="repo" href="https://github.com/iamtew/K1X">
+          <svg class="icon" aria-hidden="true"><use href="icons.svg#github"></use></svg>
+          GitHub
+        </a>
+      </p>
+      <p class="meta">VST3 and standalone. Windows, Linux, and Mac.</p>
     </div>
-    <p>Tune, click, decay, drive, filters, extra layers and Mix, then a parallel FX send and post EQ. Length and reverb predelay can snap to the DAW tempo.</p>
-    <p>Part of <a href="https://audio.stupid.systems/">Stupid Audio</a> — five free instruments in one pack. The other four live over there.</p>
-    <p class="demo">
-      <a href="K1X-DEMO1.mp3">K1X-DEMO1.mp3</a>
-      <audio controls preload="metadata">
-        <source src="K1X-DEMO1.mp3" type="audio/mpeg">
-        Your browser cannot play this demo.
-      </audio>
-    </p>
-    <p class="actions">
-      <a class="download" href="https://github.com/iamtew/K1X/releases/latest">Download</a>
-      <a href="https://github.com/iamtew/K1X">GitHub</a>
-    </p>
-    <p class="meta">VST3 and standalone.</p>
 
-    <figure>
-      <img class="shot" src="screenshot1.png" alt="K1X Main: waveform, Style, Shape, Hold, Play, Loop, and kick knobs">
-      <figcaption>Main — kick, Shape, Hold, Play, Loop, BPM.</figcaption>
-    </figure>
-    <figure>
-      <img class="shot" src="screenshot2.png" alt="K1X Effects: Dist type, delay sync, reverb, post EQ">
-      <figcaption>Effects — Dist (Soft / Hard / Fold / Diode), Delay / Reverb send, and post EQ. Sync snaps delay and reverb predelay to the tempo.</figcaption>
-    </figure>
-    <figure>
-      <img class="shot" src="screenshot-layer.png" alt="K1X Main with a Click layer selected and the 0–80 ms timing strip">
-      <figcaption>Layer — Click slot on a Multi stack. The strip under the wave is always 0–80 ms.</figcaption>
-    </figure>
-    <figure>
-      <img class="shot" src="screenshot-mix.png" alt="K1X Mix: Duck and Time knobs plus per-layer faders">
-      <figcaption>Mix — Duck / Time, then Kick and slot faders with mute, solo, phase, and Send.</figcaption>
-    </figure>
-    <figure>
-      <img class="shot" src="screenshot-eq.png" alt="K1X per-layer EQ on the Click slot">
-      <figcaption>Layer EQ — five bands on the selected slot. The same editor is post EQ on Effects.</figcaption>
-    </figure>
-
-    <section id="sound" class="card">
-      <h2>Sound</h2>
-      <p>Sine or triangle body with a pitch drop and a noise click, then saturation, high-pass, tone, and lo/hi shelves. The rail adds Bass, Noise, Click, Sweep, or Sample. Mix is Duck plus per-layer faders. Effects is Dry/FX (Dist Soft / Hard / Fold / Diode, delay, reverb) plus post EQ. Reverb predelay is milliseconds, or Sync detents the knob to 1/64–1/8. Spectrum is the processed output. The waveform is the layered mix before post FX.</p>
+    <section id="main" class="feature">
+      <div>
+        <h2>Main</h2>
+        <p>This is the kick: waveform, Style, Shape, Hold, and the knobs that make a thud into a drum. Play and Loop live here in standalone. In a DAW you hide those and hit it with MIDI instead.</p>
+        <ul>
+          <li><strong>Style</strong> — 909, 808, 707, Tight, Hard. Changes click, envelopes, and a bit of harmonic. Does not reset your knobs.</li>
+          <li><strong>Shape</strong> — sine (default) or triangle body.</li>
+          <li><strong>Hold</strong> — one-shot dies after the decay; Hold keeps the tail going until the next note.</li>
+        </ul>
+      </div>
+      <button type="button" class="shot-open" data-shot="screenshot1.png" data-shot-alt="K1X Main: waveform, Style, Shape, Hold, Play, Loop, and kick knobs">
+        <img class="shot" src="screenshot1.png" alt="K1X Main: waveform, Style, Shape, Hold, Play, Loop, and kick knobs">
+      </button>
     </section>
 
-    <section id="standalone" class="card">
-      <h2>Standalone</h2>
-      <p>Play is a one-shot. Loop (BPM 40–240, default 140) repeats until you hit Play again. Export WAV writes a 24-bit stereo shot including FX tail, 44.1 or 48 kHz. Norm (default on) peaks to −0.1 dBTP. With Loop on, the file is 2 bars at that BPM.</p>
+    <section id="layers" class="feature">
+      <div>
+        <h2>Layers</h2>
+        <p>The rail next to the wave adds Bass, Noise, Click, Sweep, or Sample on top of the kick. Each slot can sit a little early or late (0–80 ms), and each one has its own EQ. The strip under the wave is always that 80 ms window, so you can see who is late to the party.</p>
+      </div>
+      <button type="button" class="shot-open" data-shot="screenshot-layer.png" data-shot-alt="K1X Main with a Click layer selected and the 0–80 ms timing strip">
+        <img class="shot" src="screenshot-layer.png" alt="K1X Main with a Click layer selected and the 0–80 ms timing strip">
+      </button>
     </section>
 
-    <section id="notes">
-      <h2>Notes</h2>
-      <a href="notes.html?doc=MANUAL.md">Manual</a>
-      <a href="notes.html?doc=SPEC.md">Spec</a>
-      <a href="notes.html?doc=ARCHITECTURE.md">Architecture</a>
-      <a href="notes.html?doc=DSP_NOTES.md">DSP notes</a>
+    <section id="mix" class="feature">
+      <div>
+        <h2>Mix</h2>
+        <p>Duck and Time dip the kick body (and Bass) when the beater hits, so the click can punch through. Then Kick and slot faders, with mute, solo, phase, and Send into the FX. Optional stem outputs if your host actually uses extra pins.</p>
+      </div>
+      <button type="button" class="shot-open" data-shot="screenshot-mix.png" data-shot-alt="K1X Mix: Duck and Time knobs plus per-layer faders">
+        <img class="shot" src="screenshot-mix.png" alt="K1X Mix: Duck and Time knobs plus per-layer faders">
+      </button>
+    </section>
+
+    <section id="effects" class="feature">
+      <div>
+        <h2>Effects</h2>
+        <p>A parallel send after the layered mix: Dist (Soft, Hard, Fold, Diode), delay, and reverb. Dry stays the unprocessed mix. Sync snaps delay time and reverb predelay to the tempo. Spectrum is what actually leaves the plugin.</p>
+      </div>
+      <button type="button" class="shot-open" data-shot="screenshot2.png" data-shot-alt="K1X Effects: Dist type, delay sync, reverb, post EQ">
+        <img class="shot" src="screenshot2.png" alt="K1X Effects: Dist type, delay sync, reverb, post EQ">
+      </button>
+    </section>
+
+    <section id="eq" class="feature">
+      <div>
+        <h2>EQ</h2>
+        <p>Five-band parametric on the selected layer, and the same editor as post EQ on Effects. Drag a node, wheel for Q, double-click to reset a band. The spectrum sits behind the curve so you can see what you are doing to the thud.</p>
+      </div>
+      <button type="button" class="shot-open" data-shot="screenshot-eq.png" data-shot-alt="K1X per-layer EQ on the Click slot">
+        <img class="shot" src="screenshot-eq.png" alt="K1X per-layer EQ on the Click slot">
+      </button>
     </section>
   </main>
+
+  <dialog id="dl" class="dl-dialog" aria-labelledby="dl-title">
+    <button type="button" class="dl-close" data-dl-close aria-label="Close">
+      <svg class="icon" aria-hidden="true"><use href="icons.svg#close"></use></svg>
+    </button>
+    <h2 id="dl-title">Download K1X</h2>
+    <div class="dl-kind">
+      <p>The Windows installer is the easy path. It can put the VST3, the standalone app, or both on the machine, and it adds a Start menu shortcut for the app.</p>
+      <div class="dl-row" data-kind="installer" hidden>
+        <a class="download os" data-os="win" hidden>
+          <svg class="icon" aria-hidden="true"><use href="icons.svg#windows"></use></svg>
+          Windows installer
+        </a>
+      </div>
+    </div>
+    <div class="dl-kind">
+      <p>The VST3 zip is just the plugin. Drop it where your DAW looks for VST3s. Mac builds are ad-hoc signed, so Gatekeeper will sulk until you right-click Open the first time.</p>
+      <div class="dl-row" data-kind="vst3" hidden>
+        <a class="download os" data-os="win" hidden>
+          <svg class="icon" aria-hidden="true"><use href="icons.svg#windows"></use></svg>
+          Windows
+        </a>
+        <a class="download os" data-os="linux" hidden>
+          <svg class="icon" aria-hidden="true"><use href="icons.svg#linux"></use></svg>
+          Linux
+        </a>
+        <a class="download os" data-os="mac" hidden>
+          <svg class="icon" aria-hidden="true"><use href="icons.svg#apple"></use></svg>
+          macOS
+        </a>
+      </div>
+    </div>
+    <div class="dl-kind">
+      <p>The standalone zip is the app, no DAW required. Same Gatekeeper story on Mac. Linux wants the usual system ALSA, FreeType, fontconfig, and X11 libraries.</p>
+      <div class="dl-row" data-kind="standalone" hidden>
+        <a class="download os" data-os="win" hidden>
+          <svg class="icon" aria-hidden="true"><use href="icons.svg#windows"></use></svg>
+          Windows
+        </a>
+        <a class="download os" data-os="linux" hidden>
+          <svg class="icon" aria-hidden="true"><use href="icons.svg#linux"></use></svg>
+          Linux
+        </a>
+        <a class="download os" data-os="mac" hidden>
+          <svg class="icon" aria-hidden="true"><use href="icons.svg#apple"></use></svg>
+          macOS
+        </a>
+      </div>
+    </div>
+    <img class="dl-logo" src="logo.png" alt="" width="192" height="192">
+  </dialog>
+
+  <dialog id="shot" class="shot-dialog">
+    <button type="button" class="dl-close" data-shot-close aria-label="Close">
+      <svg class="icon" aria-hidden="true"><use href="icons.svg#close"></use></svg>
+    </button>
+    <img id="shot-full" alt="">
+  </dialog>
+
+  <script src="icons.js"></script>
   <script type="module" src="fx.js"></script>
   <script src="site.js"></script>
 </body>
