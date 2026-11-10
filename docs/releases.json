@@ -1,12 +1,12 @@
 {
-  "tag": "0.0.7",
+  "tag": "0.0.8",
   "files": [
-    "K1X-0.0.7-linux-x64-standalone.zip",
-    "K1X-0.0.7-linux-x64-vst3.zip",
-    "K1X-0.0.7-mac-universal-standalone.zip",
-    "K1X-0.0.7-mac-universal-vst3.zip",
-    "K1X-0.0.7-win-x64-standalone.zip",
-    "K1X-0.0.7-win-x64-vst3.zip",
-    "K1X-0.0.7-win-x64.msi"
+    "K1X-0.0.8-linux-x64-standalone.zip",
+    "K1X-0.0.8-linux-x64-vst3.zip",
+    "K1X-0.0.8-mac-universal-standalone.zip",
+    "K1X-0.0.8-mac-universal-vst3.zip",
+    "K1X-0.0.8-win-x64-installer.msi",
+    "K1X-0.0.8-win-x64-standalone.zip",
+    "K1X-0.0.8-win-x64-vst3.zip"
   ]
 }
