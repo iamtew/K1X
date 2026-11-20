@@ -24,12 +24,15 @@ GitHub: `https://github.com/iamtew/<name>`. Pages: `https://iamtew.github.io/<na
 - F4RT — instrument plugin — `~/src/F4RT`
 - fN0B — effects plugin — `~/src/fN0B`
 - fR3Z0 — effects plugin — `~/src/fR3Z0`
+- fD1ST — effects plugin — `~/src/fD1ST`
 
 Roles only. No feature copy here.
 
 ## Status
 
-Every repo in this list is live in production: public GitHub, GitHub Pages, and the catalog at https://audio.stupid.systems/. Treat them as shipped products. Do not hide them, call them in-progress, or keep them off the catalog.
+Every repo in this list except fD1ST is live in production: public GitHub, GitHub Pages, and the catalog at https://audio.stupid.systems/. Treat those as shipped products. Do not hide them, call them in-progress, or keep them off the catalog.
+
+fD1ST is work in progress: public GitHub and Pages, not on the catalog until the Meat Bag asks.
 
 ## Cross-repo
 
